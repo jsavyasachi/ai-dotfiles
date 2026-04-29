@@ -110,13 +110,13 @@ declare -A INSTRUCTION_MAP=(
 )
 
 for item in "${!INSTRUCTION_MAP[@]}"; do
-  make_symlink "$DOTFILES_DIR/$item" "${INSTRUCTION_MAP[$item]}"
+  make_symlink "$DOTFILES_DIR/instructions/$item" "${INSTRUCTION_MAP[$item]}"
 done
 
 # ── Shared statusline ─────────────────────────────────────────────────────────
 
 for dir in "$CLAUDE_DIR" "$OPENCODE_DIR"; do
-  make_symlink "$DOTFILES_DIR/statusline-command.sh" "$dir/statusline-command.sh"
+  make_symlink "$DOTFILES_DIR/scripts/statusline-command.sh" "$dir/statusline-command.sh"
 done
 
 # ── Claude specific ──────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ PROJECTS_DIR="$(dirname "$DOTFILES_DIR")"
 ENCODED_PROJECTS="$(printf '%s' "$PROJECTS_DIR" | tr '/' '-')"
 MEMORY_PARENT="$CLAUDE_DIR/projects/${ENCODED_PROJECTS}"
 MEMORY_DEST="$MEMORY_PARENT/memory"
-MEMORY_SRC="$DOTFILES_DIR/memory"
+MEMORY_SRC="$DOTFILES_DIR/extensions/memory"
 
 if [[ -d "$MEMORY_SRC" ]]; then
   mkdir -p "$MEMORY_PARENT"
@@ -135,13 +135,13 @@ fi
 
 # Directories (symlink the whole dir so new files appear automatically)
 for dir in commands skills hooks; do
-  make_symlink "$DOTFILES_DIR/$dir" "$CLAUDE_DIR/$dir"
+  make_symlink "$DOTFILES_DIR/extensions/$dir" "$CLAUDE_DIR/$dir"
 done
 
 # ── OpenCode specific ────────────────────────────────────────────────────────
 
 for dir in commands skills; do
-  make_symlink "$DOTFILES_DIR/$dir" "$OPENCODE_DIR/$dir"
+  make_symlink "$DOTFILES_DIR/extensions/$dir" "$OPENCODE_DIR/$dir"
 done
 
 # ── settings.json (copy logic for Claude/OpenCode) ───────────────────────────
@@ -173,12 +173,12 @@ sync_settings() {
   fi
 }
 
-sync_settings "$DOTFILES_DIR/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
-sync_settings "$DOTFILES_DIR/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
+sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
+sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 
-PLUGINS_FILE="$DOTFILES_DIR/plugins.txt"
+PLUGINS_FILE="$DOTFILES_DIR/config/plugins.txt"
 if [[ -f "$PLUGINS_FILE" ]] && command -v claude &>/dev/null; then
   installed_list=$(claude plugin list 2>/dev/null | grep '❯' | awk '{print $2}' || true)
   while IFS= read -r line; do
