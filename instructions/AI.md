@@ -107,3 +107,15 @@ This repo powers Claude Code, OpenCode, and Gemini CLI. When updating settings, 
 | `commands/` | `commands/` | — |
 | `skills/` | `skills/` | — |
 | `hooks/` | — | — |
+
+## AI Nativity (New Repositories)
+
+When initializing a new repository or starting a new project, your FIRST action must be to make the project "AI Native" by ensuring cross-agent parity. You must do this autonomously:
+1. Create an `AI.md` file in the root of the new repository to store project-specific AI instructions (e.g., directory layout, run commands, tech stack).
+2. Create three symlinks pointing to it:
+   - `ln -s AI.md CLAUDE.md`
+   - `ln -s AI.md OPENCODE.md`
+   - `ln -s AI.md GEMINI.md`
+
+This guarantees that Claude, OpenCode, and Gemini all share the exact same operational context from day one without any configuration drift.
+
