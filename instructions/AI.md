@@ -99,25 +99,25 @@ Rules:
 
 ## Cross-agent config
 
-This repo powers Claude Code, OpenCode, and Gemini CLI. When updating settings, update analogues too:
+This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating settings, update analogues too:
 
-| Claude Code | OpenCode | Gemini CLI |
-|-------------|----------|------------|
-| `settings.json` | `opencode.json` | `settings.json` |
-| `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` |
-| `commands/` | `commands/` | — |
-| `skills/` | `skills/` | — |
-| `hooks/` | — | — |
+| Claude Code | OpenCode | Gemini CLI | Codex |
+|-------------|----------|------------|-------|
+| `settings.json` | `opencode.json` | `settings.json` | `config.toml` |
+| `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` |
+| `commands/` | `commands/` | — | — |
+| `skills/` | `skills/` | — | `~/.agents/skills` |
+| `hooks/` | — | — | — |
 
 ## AI Nativity (New Repositories)
 
 When initializing a new repository or starting a new project, your FIRST action must be to make the project "AI Native" by ensuring cross-agent parity. You must do this autonomously:
 1. Initialize the git repository with `main` as the default branch, NEVER `master`.
 2. Create an `AI.md` file in the root of the new repository to store project-specific AI instructions (e.g., directory layout, run commands, tech stack).
-3. Create three symlinks pointing to it:
+3. Create four symlinks pointing to it:
    - `ln -s AI.md CLAUDE.md`
    - `ln -s AI.md OPENCODE.md`
    - `ln -s AI.md GEMINI.md`
+   - `ln -s AI.md AGENTS.md`
 
-This guarantees that Claude, OpenCode, and Gemini all share the exact same operational context from day one without any configuration drift.
-
+This guarantees that Claude, OpenCode, Gemini, and Codex all share the exact same operational context from day one without any configuration drift.

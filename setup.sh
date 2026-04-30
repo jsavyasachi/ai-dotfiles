@@ -13,6 +13,7 @@ BACKUP_USED=false
 # Counters for summary
 COPIED=()
 SYMLINKED=()
+MERGED=()
 BACKED_UP=()
 SKIPPED=()
 INSTALLED_PLUGINS=()
@@ -64,6 +65,72 @@ make_symlink() {
   SYMLINKED+=("$(basename "$dest")")
 }
 
+merge_managed_block() {
+  local src="$1"
+  local dest="$2"
+  local label="$3"
+  local start_marker="# >>> ai-dotfiles managed: ${label}"
+  local end_marker="# <<< ai-dotfiles managed: ${label}"
+  local tmp_block
+  local tmp_out
+  local actual
+  local expected
+
+  [[ -f "$src" ]] || return 0
+
+  tmp_block="$(mktemp)"
+  tmp_out="$(mktemp)"
+
+  {
+    printf '%s\n' "$start_marker"
+    cat "$src"
+    printf '%s\n' "$end_marker"
+  } > "$tmp_block"
+
+  if [[ -f "$dest" ]]; then
+    awk -v start="$start_marker" -v end="$end_marker" -v repl="$tmp_block" '
+      function emit_replacement(    line) {
+        while ((getline line < repl) > 0) print line
+        close(repl)
+      }
+      $0 == start {
+        if (!done) {
+          emit_replacement()
+          done = 1
+        }
+        in_block = 1
+        next
+      }
+      $0 == end {
+        in_block = 0
+        next
+      }
+      !in_block { print }
+      END {
+        if (!done) {
+          if (NR > 0) print ""
+          emit_replacement()
+        }
+      }
+    ' "$dest" > "$tmp_out"
+  else
+    cp "$tmp_block" "$tmp_out"
+  fi
+
+  actual="$(cat "$dest" 2>/dev/null || true)"
+  expected="$(cat "$tmp_out")"
+
+  if [[ "$actual" == "$expected" ]]; then
+    SKIPPED+=("$(basename "$dest") (already up to date)")
+  else
+    mkdir -p "$(dirname "$dest")"
+    mv "$tmp_out" "$dest"
+    MERGED+=("$(basename "$dest")")
+  fi
+
+  rm -f "$tmp_block" "$tmp_out"
+}
+
 # ── guards ────────────────────────────────────────────────────────────────────
 
 if [[ "${EUID:-$(id -u)}" -eq 0 ]] && [[ "${1:-}" != "--force" ]]; then
@@ -89,16 +156,22 @@ esac
 CLAUDE_DIR="$HOME/.claude"
 OPENCODE_DIR="$HOME/.config/opencode"
 GEMINI_DIR="$HOME/.gemini"
+CODEX_DIR="$HOME/.codex"
+AGENTS_DIR="$HOME/.agents"
+CODEX_SKILLS_DIR="$AGENTS_DIR/skills"
 
 printf '\n\033[1mAI agent dotfiles setup\033[0m\n'
 printf 'Dotfiles: %s\n' "$DOTFILES_DIR"
 printf 'Claude:   %s\n' "$CLAUDE_DIR"
 printf 'OpenCode: %s\n' "$OPENCODE_DIR"
 printf 'Gemini:   %s\n\n' "$GEMINI_DIR"
+printf 'Codex:    %s\n\n' "$CODEX_DIR"
 
 mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$GEMINI_DIR"
+mkdir -p "$CODEX_DIR"
+mkdir -p "$AGENTS_DIR"
 
 # ── Universal Instructions (AI.md) ────────────────────────────────────────────
 
@@ -107,6 +180,7 @@ declare -A INSTRUCTION_MAP=(
   ["CLAUDE.md"]="$CLAUDE_DIR/CLAUDE.md"
   ["OPENCODE.md"]="$OPENCODE_DIR/OPENCODE.md"
   ["GEMINI.md"]="$GEMINI_DIR/GEMINI.md"
+  ["AGENTS.md"]="$CODEX_DIR/AGENTS.md"
 )
 
 for item in "${!INSTRUCTION_MAP[@]}"; do
@@ -144,6 +218,10 @@ for dir in commands skills; do
   make_symlink "$DOTFILES_DIR/extensions/$dir" "$OPENCODE_DIR/$dir"
 done
 
+# ── Codex specific ───────────────────────────────────────────────────────────
+
+make_symlink "$DOTFILES_DIR/extensions/skills" "$CODEX_SKILLS_DIR"
+
 # ── settings.json (copy logic for Claude/OpenCode) ───────────────────────────
 
 # We still copy because symlinks are reported buggy in these agents.
@@ -175,6 +253,7 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
+merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 
@@ -203,6 +282,7 @@ printf '\n\033[1mSummary\033[0m\n'
 
 for f in "${COPIED[@]}"; do success "Copied:    $f"; done
 for f in "${SYMLINKED[@]}"; do success "Symlinked: $f"; done
+for f in "${MERGED[@]}"; do success "Merged:    $f"; done
 for f in "${BACKED_UP[@]}"; do warn "Backed up: $f  →  $BACKUP_DIR/"; done
 for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done

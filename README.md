@@ -7,6 +7,7 @@ Cross-machine AI agent configuration for Mac and Linux.
 <a href="https://anthropic.com"><img src="https://img.shields.io/badge/Claude_Code-7C4DFF?style=flat&logo=anthropic&logoColor=white" alt="Claude Code" /></a>
 <a href="https://google.com"><img src="https://img.shields.io/badge/Gemini_CLI-4285F4?style=flat&logo=google&logoColor=white" alt="Gemini CLI" /></a>
 <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-000000?style=flat&logo=openai&logoColor=white" alt="OpenCode" /></a>
+<a href="https://developers.openai.com/codex"><img src="https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white" alt="Codex" /></a>
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
 
 ## Agents supported
@@ -16,10 +17,11 @@ Cross-machine AI agent configuration for Mac and Linux.
 | Claude Code | `~/.claude/` | `CLAUDE.md` |
 | Gemini CLI | `~/.gemini/` | `GEMINI.md` |
 | OpenCode | `~/.config/opencode/` | `OPENCODE.md` |
+| Codex | `~/.codex/` | `AGENTS.md` |
 
 ## Universal Instructions
 
-All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`) are symlinked to `AI.md` in this repo. This ensures that any behavioral update (tone, conciseness, tools) is instantly shared across all agents.
+All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md`) are symlinked to `AI.md` in this repo. This ensures that any behavioral update (tone, conciseness, tools) is instantly shared across all agents.
 
 ## Claude Code
 
@@ -44,6 +46,14 @@ All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`) are symlin
 | `opencode.json` | Copied from `.tpl` | Settings |
 | `OPENCODE.md` | Symlinked | Universal instructions (`AI.md`) |
 | `commands/`, `skills/` | Symlinked (whole dir) | Custom slash commands, skills |
+
+## Codex
+
+| File/Dir | Method | Notes |
+|---|---|---|
+| `config.toml` | Managed block merge from `.tpl` | Preserves local trust/project state while enforcing shared defaults |
+| `AGENTS.md` | Symlinked | Universal instructions (`AI.md`) |
+| `~/.agents/skills` | Symlinked (whole dir) | User-scoped Codex skills shared across repos |
 
 ## New machine setup
 
@@ -79,6 +89,15 @@ OpenCode:
 | `agents/`, `modes/`, `plugins/`, `tools/`, `themes/` | Runtime/ephemeral state |
 | `file-history/`, `sessions/`, `tasks/`, `telemetry/` | Runtime/ephemeral state |
 
+Codex:
+
+| Excluded | Reason |
+|---|---|
+| `auth.json`, `history.jsonl`, `installation_id` | Auth/runtime state |
+| `cache/`, `log/`, `tmp/`, `shell_snapshots/`, `sessions/` | Runtime/ephemeral state |
+| `logs_*.sqlite*`, `state_*.sqlite*`, `models_cache.json`, `version.json` | Runtime/cache state |
+| `~/.codex/skills/` | Bundled/system-managed skills, not user-authored repo config |
+
 ## Desktop app configs
 
 Claude: `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) or
@@ -94,3 +113,7 @@ and OAuth tokens.
 
 Templates use `@@DIR@@` placeholders for absolute home paths.
 `setup.sh` substitutes the correct absolute path on each machine using `sed`.
+
+For Codex, the repo ships a managed TOML fragment instead of a full `config.toml`.
+`setup.sh` merges that block into `~/.codex/config.toml` so Codex trust metadata and
+other local settings survive reruns.
