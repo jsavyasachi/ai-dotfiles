@@ -65,6 +65,20 @@ bash setup.sh
 
 `setup.sh` is idempotent — safe to run again after pulling updates.
 
+## Testing
+
+Run the lightweight installer checks with:
+
+```bash
+make test
+```
+
+Syntax checks are available with:
+
+```bash
+make lint
+```
+
 ## Adding new slash commands / skills
 
 Files added inside `commands/` or `skills/` are live immediately on
