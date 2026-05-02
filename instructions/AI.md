@@ -92,6 +92,16 @@ Rules:
 - Order: foundation framework first, then language, then libraries, then infra/deploy last.
 - Do not use the older `![](shields.io)` form — anchor-wrapped `<img>` lets the badges link out.
 
+## Repo Changes
+
+Any meaningful repo change must include a docs/instructions audit before push.
+
+Minimum check:
+- Update `README.md` if setup, behavior, commands, stack, layout, or user-facing capabilities changed.
+- Update `AI.md` when project-specific AI instructions, workflows, paths, conventions, or available capabilities changed.
+- Keep agent-doc parity: if the repo uses symlinked agent docs (`CLAUDE.md`, `OPENCODE.md`, `GEMINI.md`, `AGENTS.md`), make sure they still point at the right source and that the source text is current.
+- Do this before every push, not as optional cleanup later.
+
 ## Tools available
 
 - **1Password CLI (`op`)** — installed, authed via desktop app integration (Touch ID). Use `op item get "<name>" --fields <field> --reveal` to fetch secrets. Prefer `--fields` over full-item dumps to keep responses small.
