@@ -54,7 +54,7 @@ test_fresh_install() {
   assert_symlink_target "$home_dir/.config/opencode/OPENCODE.md" "$REPO_ROOT/instructions/OPENCODE.md"
   assert_symlink_target "$home_dir/.gemini/GEMINI.md" "$REPO_ROOT/instructions/GEMINI.md"
   assert_symlink_target "$home_dir/.codex/AGENTS.md" "$REPO_ROOT/instructions/AGENTS.md"
-  assert_symlink_target "$home_dir/.agents/skills" "$REPO_ROOT/extensions/skills"
+  [[ ! -e "$home_dir/.agents/skills" ]] || fail "legacy ~/.agents/skills should not be created"
 
   assert_file_contains "$home_dir/.claude/settings.json" '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
@@ -96,6 +96,31 @@ EOF
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: codex config$' "$home_dir/.codex/config.toml")" "1" "managed codex block duplicated after merge"
 }
 
+test_cross_agent_commands() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-cmds.XXXXXX)"
+
+  run_setup "$home_dir" >/dev/null
+
+  # For every canonical command, expect derivatives in Gemini + Codex.
+  for src in "$REPO_ROOT"/extensions/commands/*.md; do
+    local name
+    name="$(basename "$src" .md)"
+
+    assert_exists "$home_dir/.gemini/commands/$name.toml"
+    assert_file_contains "$home_dir/.gemini/commands/$name.toml" 'description = "'
+    assert_file_contains "$home_dir/.gemini/commands/$name.toml" 'prompt = """'
+
+    assert_exists "$home_dir/.codex/skills/$name/SKILL.md"
+    assert_file_contains "$home_dir/.codex/skills/$name/SKILL.md" "name: $name"
+    assert_file_contains "$home_dir/.codex/skills/$name/SKILL.md" 'description: '
+  done
+
+  # Global gitignore picked up '.ai/'.
+  assert_exists "$home_dir/.config/git/ignore"
+  assert_file_contains "$home_dir/.config/git/ignore" '.ai/'
+}
+
 test_backup_of_conflicting_files() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-backup.XXXXXX)"
@@ -117,6 +142,7 @@ main() {
   test_fresh_install
   test_idempotent_rerun
   test_codex_merge_preserves_local_state
+  test_cross_agent_commands
   test_backup_of_conflicting_files
   printf 'PASS: setup.sh\n'
 }

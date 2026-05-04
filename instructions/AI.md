@@ -111,13 +111,24 @@ Minimum check:
 
 This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating settings, update analogues too:
 
-| Claude Code | OpenCode | Gemini CLI | Codex |
-|-------------|----------|------------|-------|
-| `settings.json` | `opencode.json` | `settings.json` | `config.toml` |
-| `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` |
-| `commands/` | `commands/` | — | — |
-| `skills/` | `skills/` | — | `~/.agents/skills` |
-| `hooks/` | — | — | — |
+| Capability | Claude Code | OpenCode | Gemini CLI | Codex |
+|---|---|---|---|---|
+| Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` |
+| Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` |
+| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | — (use skills) |
+| Skills | `skills/` | `skills/` | — | `~/.codex/skills/` |
+| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
+
+Cross-agent slash commands (`/handoff`, `/catchup`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+
+## Session continuity
+
+This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked — covered by global gitignore).
+
+- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in `AI.md`, then appends to `.ai/journal.md`. Run it at the end of a session or when checkpointing.
+- **`/catchup [N]`** replays the last N journal entries (default 1, accepts integer or `all`) plus any `## Decisions` from `AI.md`, then ends with "what's the move?". Run it at the start of a session.
+- **Session-start fallback:** when starting a new session, if the user did not run `/catchup` and `.ai/journal.md` exists in the repo root, read its last entry before responding to their first message. Surface anything still-Open or marked Next.
+- **`## Decisions` in `AI.md`** is durable. `/handoff` only appends there with explicit user opt-in. Treat entries there as canonical context, superseding stale Open/Next items in the journal.
 
 ## AI Nativity (New Repositories)
 

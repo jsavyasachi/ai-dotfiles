@@ -157,8 +157,6 @@ CLAUDE_DIR="$HOME/.claude"
 OPENCODE_DIR="$HOME/.config/opencode"
 GEMINI_DIR="$HOME/.gemini"
 CODEX_DIR="$HOME/.codex"
-AGENTS_DIR="$HOME/.agents"
-CODEX_SKILLS_DIR="$AGENTS_DIR/skills"
 
 printf '\n\033[1mAI agent dotfiles setup\033[0m\n'
 printf 'Dotfiles: %s\n' "$DOTFILES_DIR"
@@ -171,7 +169,17 @@ mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$GEMINI_DIR"
 mkdir -p "$CODEX_DIR"
-mkdir -p "$AGENTS_DIR"
+
+# Clean up legacy ~/.agents/skills symlink (Codex reads ~/.codex/skills/, not ~/.agents/skills/).
+LEGACY_AGENTS_SKILLS="$HOME/.agents/skills"
+if [[ -L "$LEGACY_AGENTS_SKILLS" ]]; then
+  legacy_dest="$(readlink "$LEGACY_AGENTS_SKILLS")"
+  if [[ "$legacy_dest" == "$DOTFILES_DIR"* ]]; then
+    rm -f "$LEGACY_AGENTS_SKILLS"
+    rmdir "$HOME/.agents" 2>/dev/null || true
+    SYMLINKED+=("removed legacy ~/.agents/skills (Codex doesn't read this path)")
+  fi
+fi
 
 # ── Universal Instructions (AI.md) ────────────────────────────────────────────
 
@@ -218,9 +226,63 @@ for dir in commands skills; do
   make_symlink "$DOTFILES_DIR/extensions/$dir" "$OPENCODE_DIR/$dir"
 done
 
-# ── Codex specific ───────────────────────────────────────────────────────────
+# ── Cross-agent commands: transform extensions/commands/*.md ─────────────────
+#
+# Single canonical source: extensions/commands/<name>.md (Markdown + YAML
+# frontmatter). Distributed to each agent in its native format:
+#   - Claude / OpenCode: covered by whole-dir symlink above (.md as-is).
+#   - Gemini CLI:        generate ~/.gemini/commands/<name>.toml.
+#   - Codex:             generate ~/.codex/skills/<name>/SKILL.md.
 
-make_symlink "$DOTFILES_DIR/extensions/skills" "$CODEX_SKILLS_DIR"
+CODEX_NATIVE_SKILLS_DIR="$CODEX_DIR/skills"
+GEMINI_COMMANDS_DIR="$GEMINI_DIR/commands"
+mkdir -p "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
+
+write_if_changed() {
+  local dest="$1" expected="$2" label="$3"
+  local tmp
+  tmp="$(mktemp)"
+  printf '%s' "$expected" > "$tmp"
+  if [[ -f "$dest" ]] && cmp -s "$dest" "$tmp"; then
+    SKIPPED+=("$label (already up to date)")
+    rm -f "$tmp"
+  else
+    mkdir -p "$(dirname "$dest")"
+    mv "$tmp" "$dest"
+    COPIED+=("$label")
+  fi
+}
+
+for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
+  [[ -e "$src" ]] || continue
+  name="$(basename "$src" .md)"
+
+  description="$(awk '/^---$/{n++; next} n==1 && /^description: /{sub(/^description: /, ""); print; exit}' "$src")"
+  body="$(awk '/^---$/{n++; next} n>=2' "$src")"
+
+  # Strip a single leading blank line from body if present.
+  body="${body#$'\n'}"
+
+  # Gemini TOML: description + triple-quoted prompt.
+  gemini_out=$'description = "'"${description//\"/\\\"}"$'"\nprompt = """\n'"$body"$'\n"""\n'
+  write_if_changed "$GEMINI_COMMANDS_DIR/$name.toml" "$gemini_out" "$name.toml (Gemini)"
+
+  # Codex SKILL.md: YAML frontmatter (name + description) + body.
+  codex_out=$'---\nname: '"$name"$'\ndescription: '"$description"$'\n---\n\n'"$body"$'\n'
+  write_if_changed "$CODEX_NATIVE_SKILLS_DIR/$name/SKILL.md" "$codex_out" "$name/SKILL.md (Codex)"
+done
+
+# ── Global gitignore: ensure '.ai/' is ignored everywhere ────────────────────
+
+GLOBAL_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
+mkdir -p "$(dirname "$GLOBAL_IGNORE")"
+touch "$GLOBAL_IGNORE"
+if ! grep -qxF '.ai/' "$GLOBAL_IGNORE"; then
+  printf '\n# ai-dotfiles: per-repo session journal\n.ai/\n' >> "$GLOBAL_IGNORE"
+  COPIED+=("global gitignore (.ai/ added)")
+else
+  SKIPPED+=("global gitignore (.ai/ already present)")
+fi
 
 # ── settings.json (copy logic for Claude/OpenCode) ───────────────────────────
 

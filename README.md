@@ -38,6 +38,7 @@ All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md
 |---|---|---|
 | `GEMINI.md` | Symlinked | Universal instructions (`AI.md`) |
 | `settings.json` | Copied | Auth and general settings |
+| `commands/*.toml` | Generated from `extensions/commands/*.md` | Markdown source transformed to TOML at install time |
 
 ## OpenCode
 
@@ -53,7 +54,22 @@ All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md
 |---|---|---|
 | `config.toml` | Managed block merge from `.tpl` | Preserves local trust/project state while enforcing shared defaults |
 | `AGENTS.md` | Symlinked | Universal instructions (`AI.md`) |
-| `~/.agents/skills` | Symlinked (whole dir) | User-scoped Codex skills shared across repos |
+| `~/.codex/skills/<name>/SKILL.md` | Generated from `extensions/commands/*.md` | Codex has no slash-commands concept — cross-agent commands ship as skills here |
+
+## Cross-agent slash commands
+
+Single canonical source: `extensions/commands/<name>.md` (Markdown + YAML frontmatter with `description`). `setup.sh` distributes each one in the agent's native format:
+
+| Agent | Distribution |
+|---|---|
+| Claude Code | symlinked as-is → `~/.claude/commands/<name>.md` |
+| OpenCode | symlinked as-is → `~/.config/opencode/commands/<name>.md` |
+| Gemini CLI | transformed to TOML → `~/.gemini/commands/<name>.toml` |
+| Codex | transformed to skill → `~/.codex/skills/<name>/SKILL.md` (adds `name:` to frontmatter) |
+
+Currently shipped: **`/handoff`** (seal session into `.ai/journal.md`, optionally promote to tracked `## Decisions` in `AI.md`) and **`/catchup [N]`** (replay last N journal entries + durable decisions, end with "what's the move?"). See `## Session continuity` in `AI.md` for the full protocol.
+
+Per-repo session journals (`.ai/journal.md`) are excluded from git via `setup.sh` adding `.ai/` to your global gitignore (`~/.config/git/ignore`) — no per-repo `.gitignore` churn needed.
 
 ## New machine setup
 
@@ -81,8 +97,9 @@ make lint
 
 ## Adding new slash commands / skills
 
-Files added inside `commands/` or `skills/` are live immediately on
-the current machine (dirs are symlinked). Commit and push to sync to other machines.
+Cross-agent slash command — drop a `.md` file with frontmatter into `extensions/commands/`, then run `bash setup.sh` to regenerate the Gemini TOML and Codex SKILL.md derivatives. Claude / OpenCode pick it up immediately via the existing whole-dir symlink.
+
+Skills (autonomous-invoke, Claude / OpenCode / Codex only) — add a directory under `extensions/skills/<name>/` containing `SKILL.md`. Live immediately on the machines where that path is symlinked. Commit and push to sync.
 
 ## What's NOT tracked
 
