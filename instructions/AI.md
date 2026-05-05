@@ -144,7 +144,9 @@ This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating set
 | Skills | `skills/` | `skills/` | — | `~/.codex/skills/` |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
 
-Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+
+When planning any change to AI agent settings, configuration, or cross-agent commands — invoke `/configure-agents` first. It fetches official docs for all 4 tools and ensures the change is expressed correctly in every format before any file is touched.
 
 ## Session continuity
 

@@ -1,4 +1,12 @@
 {
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:opencode.ai)",
+      "WebFetch(domain:geminicli.com)",
+      "WebFetch(domain:github.com)"
+    ]
+  },
   "statusLine": {
     "type": "command",
     "command": "bash @@CLAUDE_DIR@@/statusline-command.sh"
