@@ -7,7 +7,7 @@ You are sealing the current session for the next agent (which may be a different
 ## Steps
 
 1. **Summarize the session** into four buckets. Be concrete — name files, decisions, and unresolved questions:
-   - **Done** — what shipped this session (changes that exist on disk, commits made, tests passing).
+   - **Done** — what changed this session (changes that exist on disk, commits made, tests passing).
    - **Decided** — choices made and why. One line each. Skip if nothing material was decided.
    - **Open** — unresolved questions, blockers, things the user hasn't answered yet.
    - **Next** — what the next agent should pick up first. Be specific: file, function, line if possible.

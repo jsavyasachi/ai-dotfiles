@@ -7,7 +7,7 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 
 if [[ -n "$(git status --porcelain)" ]]; then
-  printf '%s\n' '[ai-dotfiles] working tree dirty at session end - consider /checkpoint' >&2
+  printf '%s\n' '[ai-dotfiles] working tree dirty at session end - consider /commit' >&2
 fi
 
 exit 0

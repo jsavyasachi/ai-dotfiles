@@ -79,13 +79,13 @@ Commit at every logical stage. A logical stage is one discrete task on the agent
 
 Do not accumulate uncommitted work across tasks. If task N+1 starts while task N's changes are still unstaged or uncommitted, commit task N first.
 
-Push at checkpoints and when done:
-- The user signals end-of-session, done, or "ship it".
+Push at natural boundaries and when done:
+- The user signals end-of-session, done, or asks to push.
 - A coherent feature is complete and tests pass.
 - `/handoff` is invoked.
-- `/ship` is invoked.
+- `/push` is invoked.
 
-Before pushing, run the docs/instructions audit in `## Repo Changes`. If tests or typecheck fail at a checkpoint, surface the failure and ask before pushing.
+Before pushing, run the docs/instructions audit in `## Repo Changes`. If tests or typecheck fail before pushing, surface the failure and ask before pushing.
 
 Never use `--no-verify`, force-push to `main`, or amend pushed commits without explicit user approval.
 
@@ -125,11 +125,12 @@ Minimum check:
 
 ## Decisions
 
-- 2026-05-04: commit/push cadence uses hybrid architecture — prose policy in `AI.md` + `/checkpoint` and `/ship` slash commands + soft Stop hook (dirty-tree nag on session end)
+- 2026-05-04: commit/push cadence uses hybrid architecture — prose policy in `AI.md` + `/commit` and `/push` slash commands + soft Stop hook (dirty-tree nag on session end)
 - 2026-05-04: "logical stage" = a TodoWrite task reaching `completed` — one task, one Conventional Commit; don't accumulate uncommitted work across tasks
-- 2026-05-04: `/ship` = `git push` current branch as-is; no PR auto-creation, no main-branch gating; relies on existing docs-audit rule
+- 2026-05-04: `/push` = `git push` current branch as-is; no PR auto-creation, no main-branch gating; relies on existing docs-audit rule
 - 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 — hook system is plugin-based (`hooks.yaml`), deferred
-- 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands ship regardless
+- 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands land regardless
+- 2026-05-04: cross-agent commit cadence commands are `/commit` and `/push`; no legacy aliases
 
 ## Cross-agent config
 
@@ -143,13 +144,13 @@ This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating set
 | Skills | `skills/` | `skills/` | — | `~/.codex/skills/` |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
 
-Cross-agent slash commands (`/handoff`, `/catchup`, `/checkpoint`, `/ship`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
 
 ## Session continuity
 
 This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked — covered by global gitignore).
 
-- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in the durable instructions file, then appends to `.ai/journal.md`. Run it at the end of a session or when checkpointing.
+- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in the durable instructions file, then appends to `.ai/journal.md`. Run it at the end of a session or when committing/pushing.
 - **`/catchup [N]`** replays the last N journal entries (default 1, accepts integer or `all`) plus any durable `## Decisions`, then ends with "what's the move?". Run it at the start of a session.
 - **Session-start fallback:** when starting a new session, if the user did not run `/catchup` and `.ai/journal.md` exists in the repo root, read its last entry before responding to their first message. Surface anything still-Open or marked Next.
 - **Durable instructions file:** prefer root `AI.md`; if it is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This repo uses the fallback layout.

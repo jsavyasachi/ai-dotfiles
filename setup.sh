@@ -14,6 +14,7 @@ BACKUP_USED=false
 COPIED=()
 SYMLINKED=()
 MERGED=()
+REMOVED=()
 BACKED_UP=()
 SKIPPED=()
 INSTALLED_PLUGINS=()
@@ -246,6 +247,19 @@ CODEX_NATIVE_SKILLS_DIR="$CODEX_DIR/skills"
 GEMINI_COMMANDS_DIR="$GEMINI_DIR/commands"
 mkdir -p "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
 
+for old_name in checkpoint ship; do
+  old_gemini="$GEMINI_COMMANDS_DIR/$old_name.toml"
+  old_codex="$CODEX_NATIVE_SKILLS_DIR/$old_name"
+  if [[ -f "$old_gemini" ]]; then
+    rm -f "$old_gemini"
+    REMOVED+=("$old_name.toml (Gemini)")
+  fi
+  if [[ -d "$old_codex" ]]; then
+    rm -rf "$old_codex"
+    REMOVED+=("$old_name/SKILL.md (Codex)")
+  fi
+done
+
 write_if_changed() {
   local dest="$1" expected="$2" label="$3"
   local tmp
@@ -353,11 +367,12 @@ printf '\n\033[1mSummary\033[0m\n'
 for f in "${COPIED[@]}"; do success "Copied:    $f"; done
 for f in "${SYMLINKED[@]}"; do success "Symlinked: $f"; done
 for f in "${MERGED[@]}"; do success "Merged:    $f"; done
+for f in "${REMOVED[@]}"; do success "Removed:   $f"; done
 for f in "${BACKED_UP[@]}"; do warn "Backed up: $f  →  $BACKUP_DIR/"; done
 for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done
 
-if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 ]]; then
+if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${#REMOVED[@]} -eq 0 && ${#INSTALLED_PLUGINS[@]} -eq 0 ]]; then
   printf '\nNothing to do — already up to date.\n'
 else
   printf '\nDone. AI agent settings are live.\n'

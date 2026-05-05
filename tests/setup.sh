@@ -106,6 +106,12 @@ test_cross_agent_commands() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-cmds.XXXXXX)"
 
+  mkdir -p "$home_dir/.gemini/commands" "$home_dir/.codex/skills/checkpoint" "$home_dir/.codex/skills/ship"
+  printf '%s\n' 'old checkpoint' > "$home_dir/.gemini/commands/checkpoint.toml"
+  printf '%s\n' 'old ship' > "$home_dir/.gemini/commands/ship.toml"
+  printf '%s\n' 'old checkpoint' > "$home_dir/.codex/skills/checkpoint/SKILL.md"
+  printf '%s\n' 'old ship' > "$home_dir/.codex/skills/ship/SKILL.md"
+
   run_setup "$home_dir" >/dev/null
 
   # For every canonical command, expect derivatives in Gemini + Codex.
@@ -124,8 +130,12 @@ test_cross_agent_commands() {
 
   assert_file_contains "$home_dir/.codex/skills/catchup/SKILL.md" 'instructions/AI.md'
   assert_file_contains "$home_dir/.codex/skills/handoff/SKILL.md" 'instructions/AI.md'
-  assert_file_contains "$home_dir/.codex/skills/checkpoint/SKILL.md" 'Commit the current logical unit'
-  assert_file_contains "$home_dir/.codex/skills/ship/SKILL.md" 'Push the current branch'
+  assert_file_contains "$home_dir/.codex/skills/commit/SKILL.md" 'Commit the current logical unit'
+  assert_file_contains "$home_dir/.codex/skills/push/SKILL.md" 'Push the current branch'
+  [[ ! -e "$home_dir/.gemini/commands/checkpoint.toml" ]] || fail "old checkpoint Gemini command should not exist"
+  [[ ! -e "$home_dir/.gemini/commands/ship.toml" ]] || fail "old ship Gemini command should not exist"
+  [[ ! -e "$home_dir/.codex/skills/checkpoint" ]] || fail "old checkpoint Codex skill should not exist"
+  [[ ! -e "$home_dir/.codex/skills/ship" ]] || fail "old ship Codex skill should not exist"
 
   # Global gitignore picked up '.ai/'.
   assert_exists "$home_dir/.config/git/ignore"
@@ -144,7 +154,7 @@ test_dirty_tree_check() {
   printf '%s\n' 'dirty' > "$repo_dir/file.txt"
   local dirty_output
   dirty_output="$(cd "$repo_dir" && "$REPO_ROOT/scripts/dirty-tree-check.sh" 2>&1)"
-  assert_eq "$dirty_output" "[ai-dotfiles] working tree dirty at session end - consider /checkpoint" "dirty repo warning mismatch"
+  assert_eq "$dirty_output" "[ai-dotfiles] working tree dirty at session end - consider /commit" "dirty repo warning mismatch"
 }
 
 test_backup_of_conflicting_files() {
