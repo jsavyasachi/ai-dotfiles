@@ -26,5 +26,10 @@ ide/
 # Backup dirs created by setup.sh
 .dotfiles-backup-*/
 
+# Third-party skills installed via `npx skills add` (Claude Code's
+# ~/.claude/skills is symlinked to extensions/skills/, so installs land here)
+extensions/skills/*
+!extensions/skills/.gitkeep
+
 # macOS
 .DS_Store
