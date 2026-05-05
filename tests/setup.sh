@@ -116,6 +116,9 @@ test_cross_agent_commands() {
     assert_file_contains "$home_dir/.codex/skills/$name/SKILL.md" 'description: '
   done
 
+  assert_file_contains "$home_dir/.codex/skills/catchup/SKILL.md" 'instructions/AI.md'
+  assert_file_contains "$home_dir/.codex/skills/handoff/SKILL.md" 'instructions/AI.md'
+
   # Global gitignore picked up '.ai/'.
   assert_exists "$home_dir/.config/git/ignore"
   assert_file_contains "$home_dir/.config/git/ignore" '.ai/'

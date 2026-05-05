@@ -21,7 +21,7 @@ Cross-machine AI agent configuration for Mac and Linux.
 
 ## Universal Instructions
 
-All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md`) are symlinked to `AI.md` in this repo. This ensures that any behavioral update (tone, conciseness, tools) is instantly shared across all agents.
+All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md`) are symlinked to `instructions/AI.md` in this repo. This ensures that any behavioral update (tone, conciseness, tools) is instantly shared across all agents.
 
 ## Claude Code
 
@@ -67,7 +67,7 @@ Single canonical source: `extensions/commands/<name>.md` (Markdown + YAML frontm
 | Gemini CLI | transformed to TOML → `~/.gemini/commands/<name>.toml` |
 | Codex | transformed to skill → `~/.codex/skills/<name>/SKILL.md` (adds `name:` to frontmatter) |
 
-Currently shipped: **`/handoff`** (seal session into `.ai/journal.md`, optionally promote to tracked `## Decisions` in `AI.md`) and **`/catchup [N]`** (replay last N journal entries + durable decisions, end with "what's the move?"). See `## Session continuity` in `AI.md` for the full protocol.
+Currently shipped: **`/handoff`** (seal session into `.ai/journal.md`, optionally promote to tracked `## Decisions` in `AI.md`) and **`/catchup [N]`** (replay last N journal entries + durable decisions, end with "what's the move?"). The commands use root `AI.md` in normal repos and fall back to `instructions/AI.md` for this dotfiles repo. See `## Session continuity` in `instructions/AI.md` for the full protocol.
 
 Per-repo session journals (`.ai/journal.md`) are excluded from git via `setup.sh` adding `.ai/` to your global gitignore (`~/.config/git/ignore`) — no per-repo `.gitignore` churn needed.
 

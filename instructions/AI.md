@@ -125,10 +125,11 @@ Cross-agent slash commands (`/handoff`, `/catchup`) live as canonical Markdown i
 
 This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked — covered by global gitignore).
 
-- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in `AI.md`, then appends to `.ai/journal.md`. Run it at the end of a session or when checkpointing.
-- **`/catchup [N]`** replays the last N journal entries (default 1, accepts integer or `all`) plus any `## Decisions` from `AI.md`, then ends with "what's the move?". Run it at the start of a session.
+- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in the durable instructions file, then appends to `.ai/journal.md`. Run it at the end of a session or when checkpointing.
+- **`/catchup [N]`** replays the last N journal entries (default 1, accepts integer or `all`) plus any durable `## Decisions`, then ends with "what's the move?". Run it at the start of a session.
 - **Session-start fallback:** when starting a new session, if the user did not run `/catchup` and `.ai/journal.md` exists in the repo root, read its last entry before responding to their first message. Surface anything still-Open or marked Next.
-- **`## Decisions` in `AI.md`** is durable. `/handoff` only appends there with explicit user opt-in. Treat entries there as canonical context, superseding stale Open/Next items in the journal.
+- **Durable instructions file:** prefer root `AI.md`; if it is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This repo uses the fallback layout.
+- **`## Decisions` in the durable instructions file** is durable. `/handoff` only appends there with explicit user opt-in. Treat entries there as canonical context, superseding stale Open/Next items in the journal.
 
 ## AI Nativity (New Repositories)
 

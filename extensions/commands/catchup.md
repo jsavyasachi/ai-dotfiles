@@ -18,7 +18,12 @@ The user may pass an argument after `/catchup` — interpret it as how many rece
    > No journal in this repo. Run `/handoff` at the end of a session to start one.
    Then stop. Do not fabricate a recap.
 
-2. **Read the `## Decisions` section of `AI.md`** at the repo root, if present. These are durable choices that supersede stale Open/Next items in the journal.
+2. **Resolve the durable instructions file**, then read its `## Decisions` section if present:
+   - Prefer `AI.md` at the repo root.
+   - If root `AI.md` is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This is the `ai-dotfiles` repo layout.
+   - If neither exists, continue without durable decisions.
+
+   Durable decisions supersede stale Open/Next items in the journal.
 
 3. **Synthesize a recap** from the last N journal entries:
    - Lead with the most recent timestamp and agent: "Last touched <date> by <agent>."
@@ -50,5 +55,5 @@ The user may pass an argument after `/catchup` — interpret it as how many rece
 
 - Be terse. The user is re-entering, not reading a postmortem.
 - If the latest journal entry is older than 14 days, prefix the recap with: "⚠ Last entry is <X> days old — context may be stale." (No emoji elsewhere.)
-- Do not read other files in the repo as part of /catchup. The journal and `## Decisions` are the contract. If the user wants deeper grounding, they'll ask.
+- Do not read other files in the repo as part of /catchup. The journal and durable instructions file are the contract. If the user wants deeper grounding, they'll ask.
 - Do not run `/handoff` automatically afterwards. Stop after the "what's the move?" line.
