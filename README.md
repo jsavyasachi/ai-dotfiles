@@ -33,15 +33,32 @@ Idempotent: safe to re-run after pulling updates.
 | `/catchup [N]` | Replay last N journal entries + durable decisions |
 | `/commit` | Commit current logical unit (Conventional Commits) |
 | `/push` | Docs/instructions audit then push |
-| `/configure-agents` | Fetch official docs for all 4 tools, propose + apply a cross-agent settings change |
+| `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
 
 **Stop hook**: soft dirty-tree warning on session end (Claude Code, Codex).
 
 **Status line**: repo@branch, git indicators, context usage bar (Claude Code).
 
-## Adding a command
+## Repo layout: where to edit what
 
-Drop a `.md` file with `description` frontmatter into `extensions/commands/`, then run `bash setup.sh`. It auto-distributes: symlink for Claude Code/OpenCode commands, SKILL.md for OpenCode/Codex, TOML for Gemini CLI.
+| You want to change... | Edit this | How it propagates |
+|---|---|---|
+| Universal AI instructions (tone, conventions, decisions) | `instructions/AI.md` | Symlinked as `CLAUDE.md`, `OPENCODE.md`, `GEMINI.md`, `AGENTS.md` (Codex + Cursor share `AGENTS.md`). Cursor's global User Rules need a one-time manual paste into Settings > Rules. |
+| Cross-agent slash commands | `extensions/commands/<name>.md` (YAML frontmatter + Markdown body) | `setup.sh` symlinks to Claude Code/OpenCode, generates `.toml` for Gemini, generates `SKILL.md` for Codex/OpenCode. Cursor commands are per-repo only and not auto-propagated. |
+| Hooks (Claude Code, e.g. Stop, PreToolUse) | `extensions/hooks/<name>.sh` + reference it in `config/settings.json.tpl` | The hooks dir is symlinked to `~/.claude/hooks/`; settings template is rendered to `~/.claude/settings.json` with absolute paths. |
+| Hooks (Codex) | `config/codex.toml.tpl` `[hooks]` block | Merged into `~/.codex/config.toml` inside an `ai-dotfiles managed` block (preserves your other Codex config). |
+| Memory (Claude Code) | `extensions/memory/MEMORY.md` and `extensions/memory/<topic>.md` | Symlinked into `~/.claude/projects/<encoded-projects-path>/memory/`. |
+| Skills (Claude Code) | `extensions/skills/<name>/SKILL.md` | Symlinked to `~/.claude/skills/`. Codex skills are auto-generated from `extensions/commands/`; don't drop separate skills there unless you want Claude-only behavior. |
+| Per-agent settings (Claude / OpenCode / Codex) | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl` | `setup.sh` renders templates with absolute paths and writes them to each agent's home. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
+| Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
+| Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |
+| Stop-hook dirty-tree behavior | `scripts/dirty-tree-check.sh` | Symlinked to `~/.claude/`; Codex references it via absolute path in the merged config block. |
+
+After editing any of the above, run `bash setup.sh`. It's idempotent and prints what changed.
+
+## Adding a new agent
+
+Cross-agent parity work goes through the `/configure-agents` command, which fetches official docs for all 5 tools before any file is touched. See `instructions/AI.md` `## Cross-agent config` for the canonical mapping.
 
 ## Testing
 
