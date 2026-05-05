@@ -18,13 +18,13 @@ cd ~/projects/ai-dotfiles
 bash setup.sh
 ```
 
-Idempotent — safe to re-run after pulling updates.
+Idempotent: safe to re-run after pulling updates.
 
 ## What you get
 
-**Universal instructions** — `instructions/AI.md` symlinked to every agent. One edit, all agents updated.
+**Universal instructions**: `instructions/AI.md` symlinked to every agent. One edit, all agents updated.
 
-**Cross-agent commands** — canonical `.md` files in `extensions/commands/`, distributed by `setup.sh` in each agent's native format:
+**Cross-agent commands**: canonical `.md` files in `extensions/commands/`, distributed by `setup.sh` in each agent's native format:
 
 | Command | What it does |
 |---|---|
@@ -34,9 +34,9 @@ Idempotent — safe to re-run after pulling updates.
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 4 tools, propose + apply a cross-agent settings change |
 
-**Stop hook** — soft dirty-tree warning on session end (Claude Code, Codex).
+**Stop hook**: soft dirty-tree warning on session end (Claude Code, Codex).
 
-**Status line** — repo@branch, git indicators, context usage bar (Claude Code).
+**Status line**: repo@branch, git indicators, context usage bar (Claude Code).
 
 ## Adding a command
 

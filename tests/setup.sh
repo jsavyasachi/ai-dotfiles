@@ -79,7 +79,7 @@ test_idempotent_rerun() {
 
   assert_file_contains "$home_dir/.codex/config.toml" '# >>> ai-dotfiles managed: codex config'
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: codex config$' "$home_dir/.codex/config.toml")" "1" "managed codex block duplicated"
-  assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Nothing to do — already up to date.' "rerun summary mismatch"
+  assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Nothing to do - already up to date.' "rerun summary mismatch"
 }
 
 test_codex_merge_preserves_local_state() {

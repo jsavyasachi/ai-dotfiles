@@ -1,7 +1,7 @@
 #!/bin/sh
 # Claude Code status line
 # Format: repo@branch ✗ ↑↓ │ Model tokens │ ████░░░░░░ 26% │ $0.012
-# NOTE: "effort/thinking" not yet in statusline JSON — tracked at
+# NOTE: "effort/thinking" not yet in statusline JSON - tracked at
 #       github.com/anthropics/claude-code/issues/13158
 
 input=$(cat)
@@ -72,7 +72,7 @@ if [ -n "$ctx_max" ]; then
   ctx_part="${DIM}$(fmt_k "$used_tokens")/$(fmt_k "$ctx_max")${R}  ${bar_col}${bar}${R} ${DIM}${ctx_pct}%${R}"
 fi
 
-# ── 4. cost (placeholder for effort — see NOTE at top) ───────────────────────
+# ── 4. cost (placeholder for effort - see NOTE at top) ───────────────────────
 cost_part=""
 if [ -n "$cost" ]; then
   cost_fmt=$(awk "BEGIN{printf \"\$%.3f\",$cost}")

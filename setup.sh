@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# setup.sh — wire up AI agent dotfiles via symlinks
+# setup.sh: wire up AI agent dotfiles via symlinks
 # Safe to run multiple times (idempotent).
 # Usage: bash setup.sh [--force]
 
@@ -30,7 +30,7 @@ backup_if_needed() {
   local target="$1"
   # Nothing to back up if target doesn't exist
   [[ -e "$target" || -L "$target" ]] || return 0
-  # Already a symlink into our dotfiles — skip
+  # Already a symlink into our dotfiles - skip
   if [[ -L "$target" ]]; then
     local link_dest
     link_dest="$(readlink "$target")"
@@ -53,13 +53,13 @@ make_symlink() {
     SKIPPED+=("$(basename "$src") (not in repo yet)")
     return 0
   fi
-  # Already correctly symlinked — skip (and avoid ln creating inside a dir symlink)
+  # Already correctly symlinked - skip (and avoid ln creating inside a dir symlink)
   if [[ -L "$dest" && "$(readlink "$dest")" == "$src" ]]; then
     SKIPPED+=("$(basename "$dest") (already symlinked)")
     return 0
   fi
   backup_if_needed "$dest"
-  # Remove existing symlink before recreating — on macOS, ln -sf on a dir symlink
+  # Remove existing symlink before recreating - on macOS, ln -sf on a dir symlink
   # creates a new symlink *inside* the target dir instead of replacing it.
   [[ -L "$dest" ]] && rm -f "$dest"
   ln -s "$src" "$dest"
@@ -152,7 +152,7 @@ case "$OS" in
   Darwin) SED_INPLACE=(-i '') ;;
   Linux)  SED_INPLACE=(-i)    ;;
   *)
-    warn "Unknown OS '$OS' — defaulting to GNU sed behavior."
+    warn "Unknown OS '$OS' - defaulting to GNU sed behavior."
     SED_INPLACE=(-i)
     ;;
 esac
@@ -212,7 +212,7 @@ make_symlink "$DOTFILES_DIR/scripts/dirty-tree-check.sh" "$CLAUDE_DIR/dirty-tree
 
 # ── Claude specific ──────────────────────────────────────────────────────────
 
-# Memory dir — path is derived from parent of this repo (the "projects" dir)
+# Memory dir: path is derived from parent of this repo (the "projects" dir)
 PROJECTS_DIR="$(dirname "$DOTFILES_DIR")"
 ENCODED_PROJECTS="$(printf '%s' "$PROJECTS_DIR" | tr '/' '-')"
 MEMORY_PARENT="$CLAUDE_DIR/projects/${ENCODED_PROJECTS}"
@@ -233,7 +233,7 @@ done
 
 make_symlink "$DOTFILES_DIR/extensions/commands" "$OPENCODE_DIR/commands"
 
-# OpenCode scans skills/**/SKILL.md — needs real files, not a dir symlink.
+# OpenCode scans skills/**/SKILL.md - needs real files, not a dir symlink.
 # Remove the old empty symlink and create an actual skills dir.
 if [[ -L "$OPENCODE_DIR/skills" ]]; then
   rm -f "$OPENCODE_DIR/skills"
@@ -383,7 +383,7 @@ for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done
 
 if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${#REMOVED[@]} -eq 0 && ${#INSTALLED_PLUGINS[@]} -eq 0 ]]; then
-  printf '\nNothing to do — already up to date.\n'
+  printf '\nNothing to do - already up to date.\n'
 else
   printf '\nDone. AI agent settings are live.\n'
 fi
