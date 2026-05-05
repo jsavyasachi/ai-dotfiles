@@ -73,6 +73,22 @@ Breaking changes: append `!` after type/scope (`feat(api)!: drop /v1`) AND inclu
 
 Don't mix unrelated changes in one commit — split. If a single logical change touches multiple types, pick the dominant one (usually `feat` or `fix`).
 
+## Commit cadence
+
+Commit at every logical stage. A logical stage is one discrete task on the agent's todo list reaching `completed` (TodoWrite for Claude, equivalent task tracker elsewhere). One completed task means one Conventional Commit.
+
+Do not accumulate uncommitted work across tasks. If task N+1 starts while task N's changes are still unstaged or uncommitted, commit task N first.
+
+Push at checkpoints and when done:
+- The user signals end-of-session, done, or "ship it".
+- A coherent feature is complete and tests pass.
+- `/handoff` is invoked.
+- `/ship` is invoked.
+
+Before pushing, run the docs/instructions audit in `## Repo Changes`. If tests or typecheck fail at a checkpoint, surface the failure and ask before pushing.
+
+Never use `--no-verify`, force-push to `main`, or amend pushed commits without explicit user approval.
+
 ## READMEs
 
 Every project README must include a `## Stack` section right after the H1 + tagline. Format: shields.io badges, anchor-wrapped, one per technology, on contiguous lines (no blank lines between — they render as a single row).
@@ -107,6 +123,14 @@ Minimum check:
 - **1Password CLI (`op`)** — installed, authed via desktop app integration (Touch ID). Use `op item get "<name>" --fields <field> --reveal` to fetch secrets. Prefer `--fields` over full-item dumps to keep responses small.
 - **Google Workspace CLI (`gws`)** — installed globally. Canonical tool for interacting with Gmail, Calendar, Drive, etc. Use `gws <service> <resource> <method> --params '...'` (e.g., `gws gmail users messages list --params '{"userId": "me"}'`). Outputs structured JSON. Use `gws schema <service.resource.method>` to introspect required parameters.
 
+## Decisions
+
+- 2026-05-04: commit/push cadence uses hybrid architecture — prose policy in `AI.md` + `/checkpoint` and `/ship` slash commands + soft Stop hook (dirty-tree nag on session end)
+- 2026-05-04: "logical stage" = a TodoWrite task reaching `completed` — one task, one Conventional Commit; don't accumulate uncommitted work across tasks
+- 2026-05-04: `/ship` = `git push` current branch as-is; no PR auto-creation, no main-branch gating; relies on existing docs-audit rule
+- 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 — hook system is plugin-based (`hooks.yaml`), deferred
+- 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands ship regardless
+
 ## Cross-agent config
 
 This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating settings, update analogues too:
@@ -119,7 +143,7 @@ This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating set
 | Skills | `skills/` | `skills/` | — | `~/.codex/skills/` |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
 
-Cross-agent slash commands (`/handoff`, `/catchup`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+Cross-agent slash commands (`/handoff`, `/catchup`, `/checkpoint`, `/ship`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
 
 ## Session continuity
 

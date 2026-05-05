@@ -29,6 +29,7 @@ All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md
 |---|---|---|
 | `settings.json` | Copied from `.tpl` | Symlink causes Claude Code bug [#764](https://github.com/anthropics/claude-code/issues/764) |
 | `statusline-command.sh` | Symlinked | oh-my-zsh-inspired statusbar |
+| `dirty-tree-check.sh` | Symlinked | Soft Stop hook warning when a session ends with uncommitted work |
 | `CLAUDE.md` | Symlinked | Universal instructions (`AI.md`) |
 | `commands/`, `skills/`, `hooks/` | Symlinked (whole dir) | Custom slash commands, skills, hooks |
 
@@ -55,6 +56,7 @@ All agent instruction files (`CLAUDE.md`, `GEMINI.md`, `OPENCODE.md`, `AGENTS.md
 | `config.toml` | Managed block merge from `.tpl` | Preserves local trust/project state while enforcing shared defaults |
 | `AGENTS.md` | Symlinked | Universal instructions (`AI.md`) |
 | `~/.codex/skills/<name>/SKILL.md` | Generated from `extensions/commands/*.md` | Codex has no slash-commands concept — cross-agent commands ship as skills here |
+| `hooks.Stop` | Managed inline config | Soft dirty-tree warning via `scripts/dirty-tree-check.sh` |
 
 ## Cross-agent slash commands
 
@@ -67,9 +69,15 @@ Single canonical source: `extensions/commands/<name>.md` (Markdown + YAML frontm
 | Gemini CLI | transformed to TOML → `~/.gemini/commands/<name>.toml` |
 | Codex | transformed to skill → `~/.codex/skills/<name>/SKILL.md` (adds `name:` to frontmatter) |
 
-Currently shipped: **`/handoff`** (seal session into `.ai/journal.md`, optionally promote to tracked `## Decisions` in `AI.md`) and **`/catchup [N]`** (replay last N journal entries + durable decisions, end with "what's the move?"). The commands use root `AI.md` in normal repos and fall back to `instructions/AI.md` for this dotfiles repo. See `## Session continuity` in `instructions/AI.md` for the full protocol.
+Currently shipped: **`/handoff`** (seal session into `.ai/journal.md`, optionally promote to tracked `## Decisions` in `AI.md`), **`/catchup [N]`** (replay last N journal entries + durable decisions, end with "what's the move?"), **`/checkpoint`** (commit the current logical unit with Conventional Commits), and **`/ship`** (run the docs/instructions audit, then push the current branch). The commands use root `AI.md` in normal repos and fall back to `instructions/AI.md` for this dotfiles repo. See `## Session continuity` and `## Commit cadence` in `instructions/AI.md` for the full protocol.
 
 Per-repo session journals (`.ai/journal.md`) are excluded from git via `setup.sh` adding `.ai/` to your global gitignore (`~/.config/git/ignore`) — no per-repo `.gitignore` churn needed.
+
+## Commit cadence
+
+Agents commit each completed logical task as one Conventional Commit, then push at explicit checkpoints or session end. `/checkpoint` performs the commit flow; `/ship` performs the docs/instructions audit and pushes the current branch as-is.
+
+Claude Code and Codex also get a soft Stop hook that prints `[ai-dotfiles] working tree dirty at session end - consider /checkpoint` when a session ends inside a dirty git tree. It never blocks exit. OpenCode and Gemini get the shared policy and commands; their Stop hooks are deferred.
 
 ## New machine setup
 

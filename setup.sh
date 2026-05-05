@@ -69,6 +69,8 @@ merge_managed_block() {
   local src="$1"
   local dest="$2"
   local label="$3"
+  local placeholder="${4:-}"
+  local replacement="${5:-}"
   local start_marker="# >>> ai-dotfiles managed: ${label}"
   local end_marker="# <<< ai-dotfiles managed: ${label}"
   local tmp_block
@@ -83,7 +85,11 @@ merge_managed_block() {
 
   {
     printf '%s\n' "$start_marker"
-    cat "$src"
+    if [[ -n "$placeholder" ]]; then
+      sed "s|${placeholder}|${replacement}|g" "$src"
+    else
+      cat "$src"
+    fi
     printf '%s\n' "$end_marker"
   } > "$tmp_block"
 
@@ -201,6 +207,8 @@ for dir in "$CLAUDE_DIR" "$OPENCODE_DIR"; do
   make_symlink "$DOTFILES_DIR/scripts/statusline-command.sh" "$dir/statusline-command.sh"
 done
 
+make_symlink "$DOTFILES_DIR/scripts/dirty-tree-check.sh" "$CLAUDE_DIR/dirty-tree-check.sh"
+
 # ── Claude specific ──────────────────────────────────────────────────────────
 
 # Memory dir — path is derived from parent of this repo (the "projects" dir)
@@ -315,7 +323,7 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
-merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config"
+merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config" "@@DOTFILES_DIR@@" "$DOTFILES_DIR"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 

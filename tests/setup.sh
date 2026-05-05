@@ -57,8 +57,14 @@ test_fresh_install() {
   [[ ! -e "$home_dir/.agents/skills" ]] || fail "legacy ~/.agents/skills should not be created"
 
   assert_file_contains "$home_dir/.claude/settings.json" '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"'
+  assert_file_contains "$home_dir/.claude/settings.json" '"Stop"'
+  assert_file_contains "$home_dir/.claude/settings.json" "bash $home_dir/.claude/dirty-tree-check.sh"
+  assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
   assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
+  assert_file_contains "$home_dir/.codex/config.toml" 'codex_hooks = true'
+  assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
+  assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "fresh install summary mismatch"
 }
 
@@ -118,10 +124,27 @@ test_cross_agent_commands() {
 
   assert_file_contains "$home_dir/.codex/skills/catchup/SKILL.md" 'instructions/AI.md'
   assert_file_contains "$home_dir/.codex/skills/handoff/SKILL.md" 'instructions/AI.md'
+  assert_file_contains "$home_dir/.codex/skills/checkpoint/SKILL.md" 'Commit the current logical unit'
+  assert_file_contains "$home_dir/.codex/skills/ship/SKILL.md" 'Push the current branch'
 
   # Global gitignore picked up '.ai/'.
   assert_exists "$home_dir/.config/git/ignore"
   assert_file_contains "$home_dir/.config/git/ignore" '.ai/'
+}
+
+test_dirty_tree_check() {
+  local repo_dir
+  repo_dir="$(mktemp -d /tmp/ai-dotfiles-test-dirty.XXXXXX)"
+
+  git -C "$repo_dir" init -q
+  local clean_output
+  clean_output="$(cd "$repo_dir" && "$REPO_ROOT/scripts/dirty-tree-check.sh" 2>&1)"
+  assert_eq "$clean_output" "" "clean repo should not warn"
+
+  printf '%s\n' 'dirty' > "$repo_dir/file.txt"
+  local dirty_output
+  dirty_output="$(cd "$repo_dir" && "$REPO_ROOT/scripts/dirty-tree-check.sh" 2>&1)"
+  assert_eq "$dirty_output" "[ai-dotfiles] working tree dirty at session end - consider /checkpoint" "dirty repo warning mismatch"
 }
 
 test_backup_of_conflicting_files() {
@@ -146,6 +169,7 @@ main() {
   test_idempotent_rerun
   test_codex_merge_preserves_local_state
   test_cross_agent_commands
+  test_dirty_tree_check
   test_backup_of_conflicting_files
   printf 'PASS: setup.sh\n'
 }
