@@ -231,9 +231,14 @@ done
 
 # ── OpenCode specific ────────────────────────────────────────────────────────
 
-for dir in commands skills; do
-  make_symlink "$DOTFILES_DIR/extensions/$dir" "$OPENCODE_DIR/$dir"
-done
+make_symlink "$DOTFILES_DIR/extensions/commands" "$OPENCODE_DIR/commands"
+
+# OpenCode scans skills/**/SKILL.md — needs real files, not a dir symlink.
+# Remove the old empty symlink and create an actual skills dir.
+if [[ -L "$OPENCODE_DIR/skills" ]]; then
+  rm -f "$OPENCODE_DIR/skills"
+fi
+mkdir -p "$OPENCODE_DIR/skills"
 
 # ── Cross-agent commands: transform extensions/commands/*.md ─────────────────
 #
@@ -243,9 +248,10 @@ done
 #   - Gemini CLI:        generate ~/.gemini/commands/<name>.toml.
 #   - Codex:             generate ~/.codex/skills/<name>/SKILL.md.
 
+OPENCODE_NATIVE_SKILLS_DIR="$OPENCODE_DIR/skills"
 CODEX_NATIVE_SKILLS_DIR="$CODEX_DIR/skills"
 GEMINI_COMMANDS_DIR="$GEMINI_DIR/commands"
-mkdir -p "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
+mkdir -p "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
 
 for old_name in checkpoint ship; do
   old_gemini="$GEMINI_COMMANDS_DIR/$old_name.toml"
@@ -288,6 +294,10 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   # Gemini TOML: description + triple-quoted prompt.
   gemini_out=$'description = "'"${description//\"/\\\"}"$'"\nprompt = """\n'"$body"$'\n"""\n'
   write_if_changed "$GEMINI_COMMANDS_DIR/$name.toml" "$gemini_out" "$name.toml (Gemini)"
+
+  # OpenCode SKILL.md: same YAML frontmatter format as Codex.
+  opencode_out=$'---\nname: '"$name"$'\ndescription: '"$description"$'\n---\n\n'"$body"$'\n'
+  write_if_changed "$OPENCODE_NATIVE_SKILLS_DIR/$name/SKILL.md" "$opencode_out" "$name/SKILL.md (OpenCode)"
 
   # Codex SKILL.md: YAML frontmatter (name + description) + body.
   codex_out=$'---\nname: '"$name"$'\ndescription: '"$description"$'\n---\n\n'"$body"$'\n'
