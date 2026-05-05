@@ -4,19 +4,21 @@
 
 Direct, technical, informal. No corporate softening.
 
+Never use em dashes (—). Use a hyphen (-) or colon (:) instead.
+
 ## Conciseness
 
 Deliver maximum information density.
 
 ### Banned patterns (ALL modes, zero exceptions)
 
-- **Openers** — start with the answer
-- **Closers** — stop when done
-- **Hedging preambles** — state the thing directly
-- **Restating the question** — never echo
-- **Praise** — NEVER EVER
-- **Filler transitions** — useless
-- **Obvious disclaimers** — unless they carry real informational weight (e.g. safety warnings)
+- **Openers**: start with the answer
+- **Closers**: stop when done
+- **Hedging preambles**: state the thing directly
+- **Restating the question**: never echo
+- **Praise**: NEVER EVER
+- **Filler transitions**: useless
+- **Obvious disclaimers**: unless they carry real informational weight (e.g. safety warnings)
 
 ### Default mode (always active)
 
@@ -46,7 +48,7 @@ Ask one question at a time. Never bundle multiple questions in a single message.
 
 End every response with a confidence score:
 
-**Confidence: XX%** | sources: [required when referencing code or docs — `file:line` or URLs; omit for general knowledge]
+**Confidence: XX%** | sources: [required when referencing code or docs: `file:line` or URLs; omit for general knowledge]
 
 ## Commits
 
@@ -55,23 +57,23 @@ Follow Conventional Commits for every commit message, no exceptions.
 Format: `type(scope): subject` (scope optional). Subject in imperative mood, lowercase, no trailing period, ≤72 chars.
 
 Types:
-- `feat` — user-visible new functionality
-- `fix` — bug fix
-- `docs` — documentation only
-- `refactor` — code change that neither fixes a bug nor adds a feature
-- `perf` — performance improvement
-- `test` — adding/updating tests
-- `chore` — maintenance, deps, tooling, untracking files, rename-only changes
-- `build` — build system / package config
-- `ci` — CI config
-- `style` — formatting only (whitespace, semicolons)
-- `revert` — reverts a prior commit
+- `feat`: user-visible new functionality
+- `fix`: bug fix
+- `docs`: documentation only
+- `refactor`: code change that neither fixes a bug nor adds a feature
+- `perf`: performance improvement
+- `test`: adding/updating tests
+- `chore`: maintenance, deps, tooling, untracking files, rename-only changes
+- `build`: build system / package config
+- `ci`: CI config
+- `style`: formatting only (whitespace, semicolons)
+- `revert`: reverts a prior commit
 
 Body (optional, after a blank line): wrap at 72, explain *why* not *what*. Use bullets for multiple points. Reference issue IDs at the end (`Closes #123`).
 
 Breaking changes: append `!` after type/scope (`feat(api)!: drop /v1`) AND include a `BREAKING CHANGE:` footer explaining the migration.
 
-Don't mix unrelated changes in one commit — split. If a single logical change touches multiple types, pick the dominant one (usually `feat` or `fix`).
+Don't mix unrelated changes in one commit - split. If a single logical change touches multiple types, pick the dominant one (usually `feat` or `fix`).
 
 ## Commit cadence
 
@@ -91,7 +93,7 @@ Never use `--no-verify`, force-push to `main`, or amend pushed commits without e
 
 ## READMEs
 
-Every project README must include a `## Stack` section right after the H1 + tagline. Format: shields.io badges, anchor-wrapped, one per technology, on contiguous lines (no blank lines between — they render as a single row).
+Every project README must include a `## Stack` section right after the H1 + tagline. Format: shields.io badges, anchor-wrapped, one per technology, on contiguous lines (no blank lines between: they render as a single row).
 
 ```markdown
 ## Stack
@@ -106,7 +108,7 @@ Rules:
 - `style=flat`, always lowercase the `?style` query.
 - Each badge wrapped in `<a href="…">` to the canonical homepage.
 - Order: foundation framework first, then language, then libraries, then infra/deploy last.
-- Do not use the older `![](shields.io)` form — anchor-wrapped `<img>` lets the badges link out.
+- Do not use the older `![](shields.io)` form - anchor-wrapped `<img>` lets the badges link out.
 
 ## Repo Changes
 
@@ -120,15 +122,15 @@ Minimum check:
 
 ## Tools available
 
-- **1Password CLI (`op`)** — installed, authed via desktop app integration (Touch ID). Use `op item get "<name>" --fields <field> --reveal` to fetch secrets. Prefer `--fields` over full-item dumps to keep responses small.
-- **Google Workspace CLI (`gws`)** — installed globally. Canonical tool for interacting with Gmail, Calendar, Drive, etc. Use `gws <service> <resource> <method> --params '...'` (e.g., `gws gmail users messages list --params '{"userId": "me"}'`). Outputs structured JSON. Use `gws schema <service.resource.method>` to introspect required parameters.
+- **1Password CLI (`op`)**: installed, authed via desktop app integration (Touch ID). Use `op item get "<name>" --fields <field> --reveal` to fetch secrets. Prefer `--fields` over full-item dumps to keep responses small.
+- **Google Workspace CLI (`gws`)**: installed globally. Canonical tool for interacting with Gmail, Calendar, Drive, etc. Use `gws <service> <resource> <method> --params '...'` (e.g., `gws gmail users messages list --params '{"userId": "me"}'`). Outputs structured JSON. Use `gws schema <service.resource.method>` to introspect required parameters.
 
 ## Decisions
 
-- 2026-05-04: commit/push cadence uses hybrid architecture — prose policy in `AI.md` + `/commit` and `/push` slash commands + soft Stop hook (dirty-tree nag on session end)
-- 2026-05-04: "logical stage" = a TodoWrite task reaching `completed` — one task, one Conventional Commit; don't accumulate uncommitted work across tasks
+- 2026-05-04: commit/push cadence uses hybrid architecture: prose policy in `AI.md` + `/commit` and `/push` slash commands + soft Stop hook (dirty-tree nag on session end)
+- 2026-05-04: "logical stage" = a TodoWrite task reaching `completed` - one task, one Conventional Commit; don't accumulate uncommitted work across tasks
 - 2026-05-04: `/push` = `git push` current branch as-is; no PR auto-creation, no main-branch gating; relies on existing docs-audit rule
-- 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 — hook system is plugin-based (`hooks.yaml`), deferred
+- 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 - hook system is plugin-based (`hooks.yaml`), deferred
 - 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands land regardless
 - 2026-05-04: cross-agent commit cadence commands are `/commit` and `/push`; no legacy aliases
 
@@ -140,17 +142,17 @@ This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating set
 |---|---|---|---|---|
 | Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` |
 | Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` |
-| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | — (use skills) |
-| Skills | `skills/` | `skills/` | — | `~/.codex/skills/` |
+| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) |
+| Skills | `skills/` | `skills/` | - | `~/.codex/skills/` |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
 
 Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
 
-When planning any change to AI agent settings, configuration, or cross-agent commands — invoke `/configure-agents` first. It fetches official docs for all 4 tools and ensures the change is expressed correctly in every format before any file is touched.
+When planning any change to AI agent settings, configuration, or cross-agent commands: invoke `/configure-agents` first. It fetches official docs for all 4 tools and ensures the change is expressed correctly in every format before any file is touched.
 
 ## Session continuity
 
-This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked — covered by global gitignore).
+This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked, covered by global gitignore).
 
 - **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, asks the user whether to promote any item to a tracked `## Decisions` section in the durable instructions file, then appends to `.ai/journal.md`. Run it at the end of a session or when committing/pushing.
 - **`/catchup [N]`** replays the last N journal entries (default 1, accepts integer or `all`) plus any durable `## Decisions`, then ends with "what's the move?". Run it at the start of a session.
