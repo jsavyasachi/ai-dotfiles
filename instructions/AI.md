@@ -136,19 +136,21 @@ Minimum check:
 
 ## Cross-agent config
 
-This repo powers Claude Code, OpenCode, Gemini CLI, and Codex. When updating settings, update analogues too:
+This repo powers Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. When updating settings, update analogues too:
 
-| Capability | Claude Code | OpenCode | Gemini CLI | Codex |
-|---|---|---|---|---|
-| Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` |
-| Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` |
-| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) |
-| Skills | `skills/` | `skills/` | - | `~/.codex/skills/` |
-| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` |
+| Capability | Claude Code | OpenCode | Gemini CLI | Codex | Cursor |
+|---|---|---|---|---|---|
+| Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` | Cursor Settings UI (no file) |
+| Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
+| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
+| Skills | `skills/` | `skills/` | - | `~/.codex/skills/` | - |
+| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` | `.cursor/hooks/` (per-repo, beta) |
 
-Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex.
+Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
 
-When planning any change to AI agent settings, configuration, or cross-agent commands: invoke `/configure-agents` first. It fetches official docs for all 4 tools and ensures the change is expressed correctly in every format before any file is touched.
+Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
+
+When planning any change to AI agent settings, configuration, or cross-agent commands: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched.
 
 ## Session continuity
 
@@ -171,4 +173,6 @@ When initializing a new repository or starting a new project, your FIRST action 
    - `ln -s AI.md GEMINI.md`
    - `ln -s AI.md AGENTS.md`
 
-This guarantees that Claude, OpenCode, Gemini, and Codex all share the exact same operational context from day one without any configuration drift.
+The `AGENTS.md` symlink is dual-purpose: Codex and Cursor both read it from the project root, so no fifth symlink is needed for Cursor.
+
+This guarantees that Claude, OpenCode, Gemini, Codex, and Cursor all share the exact same operational context from day one without any configuration drift.

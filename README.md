@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-Cross-machine AI agent configuration for Claude Code, OpenCode, Gemini CLI, and Codex.
+Cross-machine AI agent configuration for Claude Code, OpenCode, Gemini CLI, Codex, and Cursor.
 
 ## Stack
 
@@ -8,6 +8,7 @@ Cross-machine AI agent configuration for Claude Code, OpenCode, Gemini CLI, and 
 <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-000000?style=flat&logo=openai&logoColor=white" alt="OpenCode" /></a>
 <a href="https://google.com"><img src="https://img.shields.io/badge/Gemini_CLI-4285F4?style=flat&logo=google&logoColor=white" alt="Gemini CLI" /></a>
 <a href="https://developers.openai.com/codex"><img src="https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white" alt="Codex" /></a>
+<a href="https://cursor.com"><img src="https://img.shields.io/badge/Cursor-000000?style=flat&logo=cursor&logoColor=white" alt="Cursor" /></a>
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
 
 ## Setup
@@ -22,7 +23,7 @@ Idempotent: safe to re-run after pulling updates.
 
 ## What you get
 
-**Universal instructions**: `instructions/AI.md` symlinked to every agent. One edit, all agents updated.
+**Universal instructions**: `instructions/AI.md` symlinked to every agent. One edit, all agents updated. Cursor consumes the same `AGENTS.md` symlink that Codex does (per-repo); for Cursor's global User Rules, paste `instructions/AI.md` into Cursor Settings > Rules once per machine (setup prints a one-time hint).
 
 **Cross-agent commands**: canonical `.md` files in `extensions/commands/`, distributed by `setup.sh` in each agent's native format:
 

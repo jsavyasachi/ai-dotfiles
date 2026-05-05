@@ -164,18 +164,21 @@ CLAUDE_DIR="$HOME/.claude"
 OPENCODE_DIR="$HOME/.config/opencode"
 GEMINI_DIR="$HOME/.gemini"
 CODEX_DIR="$HOME/.codex"
+CURSOR_DIR="$HOME/.cursor"
 
 printf '\n\033[1mAI agent dotfiles setup\033[0m\n'
 printf 'Dotfiles: %s\n' "$DOTFILES_DIR"
 printf 'Claude:   %s\n' "$CLAUDE_DIR"
 printf 'OpenCode: %s\n' "$OPENCODE_DIR"
-printf 'Gemini:   %s\n\n' "$GEMINI_DIR"
-printf 'Codex:    %s\n\n' "$CODEX_DIR"
+printf 'Gemini:   %s\n' "$GEMINI_DIR"
+printf 'Codex:    %s\n' "$CODEX_DIR"
+printf 'Cursor:   %s\n\n' "$CURSOR_DIR"
 
 mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$GEMINI_DIR"
 mkdir -p "$CODEX_DIR"
+mkdir -p "$CURSOR_DIR"
 
 # Clean up legacy ~/.agents/skills symlink (Codex reads ~/.codex/skills/, not ~/.agents/skills/).
 LEGACY_AGENTS_SKILLS="$HOME/.agents/skills"
@@ -304,6 +307,26 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   write_if_changed "$CODEX_NATIVE_SKILLS_DIR/$name/SKILL.md" "$codex_out" "$name/SKILL.md (Codex)"
 done
 
+# ── Cursor ───────────────────────────────────────────────────────────────────
+#
+# Cursor's per-project AGENTS.md is already covered by the AI Nativity
+# symlink each downstream repo creates - nothing to do here for that.
+#
+# Cursor's user-scoped "User Rules" only live in the Settings UI (no documented
+# file path), so we cannot symlink them. Print a one-time onboarding hint and
+# track it via a sentinel file. Future Cursor-side wiring (MCP, hooks) goes
+# in this section.
+
+CURSOR_SENTINEL="$CURSOR_DIR/.ai-dotfiles-onboarded"
+if [[ ! -f "$CURSOR_SENTINEL" ]]; then
+  CURSOR_HINT="Cursor: open Settings > Rules and paste $DOTFILES_DIR/instructions/AI.md as a User Rule (one-time)."
+  touch "$CURSOR_SENTINEL"
+  COPIED+=("Cursor onboarding hint (see end of summary)")
+else
+  CURSOR_HINT=""
+  SKIPPED+=("Cursor onboarding hint (already shown)")
+fi
+
 # ── Global gitignore: ensure '.ai/' is ignored everywhere ────────────────────
 
 GLOBAL_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
@@ -381,6 +404,11 @@ for f in "${REMOVED[@]}"; do success "Removed:   $f"; done
 for f in "${BACKED_UP[@]}"; do warn "Backed up: $f  →  $BACKUP_DIR/"; done
 for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done
+
+if [[ -n "${CURSOR_HINT:-}" ]]; then
+  printf '\n\033[1mAction required\033[0m\n'
+  warn "$CURSOR_HINT"
+fi
 
 if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${#REMOVED[@]} -eq 0 && ${#INSTALLED_PLUGINS[@]} -eq 0 ]]; then
   printf '\nNothing to do - already up to date.\n'
