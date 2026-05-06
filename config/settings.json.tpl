@@ -22,6 +22,18 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash @@CLAUDE_DIR@@/hooks/configure-agents-reminder.sh",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "env": {

@@ -152,7 +152,7 @@ Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/config
 
 Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`) and Codex (`~/.codex/skills/`), and a generated `<name>.toml` in Gemini's `commands/` (user-invoked `/<name>` since Gemini has no model-invoked skill mechanism; relative `references/` paths are rewritten to absolute). Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
 
-When planning any change to AI agent settings, configuration, or cross-agent commands: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched.
+When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
 
 ## Session continuity
 
