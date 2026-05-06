@@ -27,9 +27,11 @@ ide/
 .dotfiles-backup-*/
 
 # Third-party skills installed via `npx skills add` (Claude Code's
-# ~/.claude/skills is symlinked to extensions/skills/, so installs land here)
+# ~/.claude/skills is symlinked to extensions/skills/, so installs land here).
+# First-party skills authored in this repo are explicitly un-ignored below.
 extensions/skills/*
 !extensions/skills/.gitkeep
+!extensions/skills/mermaid/
 
 # macOS
 .DS_Store

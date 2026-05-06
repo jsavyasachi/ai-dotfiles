@@ -307,6 +307,31 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   write_if_changed "$CODEX_NATIVE_SKILLS_DIR/$name/SKILL.md" "$codex_out" "$name/SKILL.md (Codex)"
 done
 
+# ── Cross-agent skills: propagate extensions/skills/<name>/ ──────────────────
+#
+# extensions/skills/ is the canonical location for Claude (whole-dir symlink
+# above). Mirror each skill subdir into OpenCode and Codex skill dirs as
+# per-skill symlinks so all three agents share one source of truth.
+
+for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
+  [[ -d "$skill_src" ]] || continue
+  skill_name="$(basename "$skill_src")"
+  make_symlink "${skill_src%/}" "$OPENCODE_NATIVE_SKILLS_DIR/$skill_name"
+  make_symlink "${skill_src%/}" "$CODEX_NATIVE_SKILLS_DIR/$skill_name"
+
+  # Gemini has no skills system; expose each skill as a user-invoked /<name>
+  # command instead. SKILL.md body becomes the prompt; relative `references/`
+  # paths are rewritten to absolute so the model can resolve them.
+  skill_md="${skill_src}SKILL.md"
+  [[ -f "$skill_md" ]] || continue
+  skill_desc="$(awk '/^---$/{n++; next} n==1 && /^description: /{sub(/^description: /, ""); print; exit}' "$skill_md")"
+  skill_body="$(awk '/^---$/{n++; next} n>=2' "$skill_md")"
+  skill_body="${skill_body#$'\n'}"
+  skill_body="${skill_body//references\//${skill_src}references/}"
+  gemini_skill_out=$'description = "'"${skill_desc//\"/\\\"}"$'"\nprompt = """\n'"$skill_body"$'\n"""\n'
+  write_if_changed "$GEMINI_COMMANDS_DIR/$skill_name.toml" "$gemini_skill_out" "$skill_name.toml (Gemini, from skill)"
+done
+
 # ── Cursor ───────────────────────────────────────────────────────────────────
 #
 # Cursor's per-project AGENTS.md is already covered by the AI Nativity
