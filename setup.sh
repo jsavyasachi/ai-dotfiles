@@ -8,7 +8,6 @@ set -euo pipefail
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_TS="$(date +%Y%m%d_%H%M%S)"
 BACKUP_DIR="$HOME/.ai-dotfiles-backup-$BACKUP_TS"
-BACKUP_USED=false
 
 # Counters for summary
 COPIED=()
@@ -41,7 +40,6 @@ backup_if_needed() {
   # Back up
   mkdir -p "$BACKUP_DIR"
   mv "$target" "$BACKUP_DIR/"
-  BACKUP_USED=true
   BACKED_UP+=("$(basename "$target")")
 }
 
@@ -147,15 +145,6 @@ fi
 
 # ── OS detection ──────────────────────────────────────────────────────────────
 
-OS="$(uname -s)"
-case "$OS" in
-  Darwin) SED_INPLACE=(-i '') ;;
-  Linux)  SED_INPLACE=(-i)    ;;
-  *)
-    warn "Unknown OS '$OS' - defaulting to GNU sed behavior."
-    SED_INPLACE=(-i)
-    ;;
-esac
 
 # ── agents ────────────────────────────────────────────────────────────────────
 
