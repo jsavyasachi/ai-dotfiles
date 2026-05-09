@@ -2,7 +2,7 @@ model = "gpt-5.4"
 model_reasoning_effort = "medium"
 
 [features]
-codex_hooks = true
+hooks = true
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "run-state", "context-used", "five-hour-limit", "weekly-limit", "context-window-size", "task-progress"]
