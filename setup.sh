@@ -152,6 +152,7 @@ fi
 CLAUDE_DIR="$HOME/.claude"
 OPENCODE_DIR="$HOME/.config/opencode"
 GEMINI_DIR="$HOME/.gemini"
+GEMINI_SKILLS_DIR="$GEMINI_DIR/skills"
 CODEX_DIR="$HOME/.codex"
 CURSOR_DIR="$HOME/.cursor"
 
@@ -166,6 +167,7 @@ printf 'Cursor:   %s\n\n' "$CURSOR_DIR"
 mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$GEMINI_DIR"
+mkdir -p "$GEMINI_SKILLS_DIR"
 mkdir -p "$CODEX_DIR"
 mkdir -p "$CURSOR_DIR"
 
@@ -258,6 +260,19 @@ for old_name in checkpoint ship; do
   fi
 done
 
+# Remove stale Gemini command TOMLs that came from skills (pre-v0.41 workaround).
+# Gemini v0.41+ auto-registers each native skill as /<name>, so a TOML of the
+# same name now collides ("User command" + "Skill command" rename conflict).
+for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
+  [[ -d "$skill_src" ]] || continue
+  skill_name="$(basename "$skill_src")"
+  stale_toml="$GEMINI_COMMANDS_DIR/$skill_name.toml"
+  if [[ -f "$stale_toml" ]]; then
+    rm -f "$stale_toml"
+    REMOVED+=("$skill_name.toml (stale Gemini command, now a native skill)")
+  fi
+done
+
 write_if_changed() {
   local dest="$1" expected="$2" label="$3"
   local tmp
@@ -308,17 +323,17 @@ for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   make_symlink "${skill_src%/}" "$OPENCODE_NATIVE_SKILLS_DIR/$skill_name"
   make_symlink "${skill_src%/}" "$CODEX_NATIVE_SKILLS_DIR/$skill_name"
 
-  # Gemini has no skills system; expose each skill as a user-invoked /<name>
-  # command instead. SKILL.md body becomes the prompt; relative `references/`
-  # paths are rewritten to absolute so the model can resolve them.
-  skill_md="${skill_src}SKILL.md"
-  [[ -f "$skill_md" ]] || continue
-  skill_desc="$(awk '/^---$/{n++; next} n==1 && /^description: /{sub(/^description: /, ""); print; exit}' "$skill_md")"
-  skill_body="$(awk '/^---$/{n++; next} n>=2' "$skill_md")"
-  skill_body="${skill_body#$'\n'}"
-  skill_body="${skill_body//references\//${skill_src}references/}"
-  gemini_skill_out=$'description = "'"${skill_desc//\"/\\\"}"$'"\nprompt = """\n'"$skill_body"$'\n"""\n'
-  write_if_changed "$GEMINI_COMMANDS_DIR/$skill_name.toml" "$gemini_skill_out" "$skill_name.toml (Gemini, from skill)"
+  # Gemini v0.41+ supports native Agent Skills - per-skill symlink into
+  # ~/.gemini/skills/. Also remove any ~/.agents/skills/<name> entry (e.g.
+  # from a manual `gemini skills install`), since Gemini's same-tier
+  # precedence (.agents/skills > .gemini/skills) would shadow our managed
+  # symlink.
+  make_symlink "${skill_src%/}" "$GEMINI_SKILLS_DIR/$skill_name"
+  shadow="$HOME/.agents/skills/$skill_name"
+  if [[ -d "$shadow" || -L "$shadow" ]]; then
+    rm -rf "$shadow"
+    REMOVED+=("~/.agents/skills/$skill_name (was shadowing $skill_name in ~/.gemini/skills)")
+  fi
 done
 
 # ── Cursor ───────────────────────────────────────────────────────────────────

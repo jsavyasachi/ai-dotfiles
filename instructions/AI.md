@@ -143,14 +143,14 @@ This repo powers Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. When upda
 | Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` | Cursor Settings UI (no file) |
 | Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
 | Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
-| Skills | `skills/` | `skills/` | as `/<name>` command | `~/.codex/skills/` | - |
+| Skills | `skills/` | `skills/` | `skills/` (v0.41+) | `~/.codex/skills/` | - |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` | `.cursor/hooks/` (per-repo, beta) |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
 
 Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
 
-Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`) and Codex (`~/.codex/skills/`), and a generated `<name>.toml` in Gemini's `commands/` (user-invoked `/<name>` since Gemini has no model-invoked skill mechanism; relative `references/` paths are rewritten to absolute). Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
+Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and Gemini (`~/.gemini/skills/`) - Gemini v0.41+ has native Agent Skills, auto-registered as `/<name>` slash commands. Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
 
 When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
 
