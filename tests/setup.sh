@@ -62,7 +62,7 @@ test_fresh_install() {
   assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
   assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
-  assert_file_contains "$home_dir/.codex/config.toml" 'codex_hooks = true'
+  assert_file_contains "$home_dir/.codex/config.toml" 'hooks = true'
   assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
   assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "fresh install summary mismatch"
