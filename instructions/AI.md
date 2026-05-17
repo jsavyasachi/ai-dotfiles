@@ -91,6 +91,26 @@ Before pushing, run the docs/instructions audit in `## Repo Changes`. If tests o
 
 Never use `--no-verify`, force-push to `main`, or amend pushed commits without explicit user approval.
 
+## Testing
+
+Test-driven development applies to all code - new features, bug fixes, refactors, ports, rewrites. No exceptions for "this is just a small change."
+
+For each unit of behavior:
+
+1. Write the test first - it should fail (compile error, assertion failure, or runtime error).
+2. Implement the minimum code to make it pass.
+3. Refactor if needed, with the test as the safety net.
+
+Bug fixes: write a regression test that reproduces the bug *before* fixing it. The test must fail on the buggy code and pass on the fix.
+
+Refactors: the existing test suite is the spec. If coverage is thin in the area being refactored, add tests first, then refactor. Never refactor without test coverage.
+
+Ports/rewrites: port the test suite first, port implementation to pass it. The test suite is the spec.
+
+Work module-by-module, not all-tests-then-all-impl. Red/green cycles stay short, you catch design problems before they compound, and tests stay honest (written against intended behavior, not retrofitted to existing code).
+
+Skip TDD only for: pure mechanical edits (renames, formatting, dependency bumps), throwaway exploration spikes, and code that is inherently hard to test in isolation (UI animation, interactive prompts, shell glue). When skipping, prefer adding a test after rather than no test at all.
+
 ## READMEs
 
 Every project README must include a `## Stack` section right after the H1 + tagline. Format: shields.io badges, anchor-wrapped, one per technology, on contiguous lines (no blank lines between: they render as a single row).
