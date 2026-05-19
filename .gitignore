@@ -35,6 +35,7 @@ extensions/skills/*
 !extensions/skills/devserver/
 !extensions/skills/file-docs/
 !extensions/skills/tdd/
+!extensions/skills/readme-badges/
 
 # macOS
 .DS_Store
