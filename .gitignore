@@ -32,6 +32,7 @@ ide/
 extensions/skills/*
 !extensions/skills/.gitkeep
 !extensions/skills/mermaid/
+!extensions/skills/devserver/
 
 # macOS
 .DS_Store
