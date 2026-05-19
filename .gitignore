@@ -34,6 +34,7 @@ extensions/skills/*
 !extensions/skills/mermaid/
 !extensions/skills/devserver/
 !extensions/skills/file-docs/
+!extensions/skills/tdd/
 
 # macOS
 .DS_Store
