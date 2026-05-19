@@ -33,6 +33,7 @@ extensions/skills/*
 !extensions/skills/.gitkeep
 !extensions/skills/mermaid/
 !extensions/skills/devserver/
+!extensions/skills/file-docs/
 
 # macOS
 .DS_Store
