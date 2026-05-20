@@ -356,7 +356,7 @@ else
   SKIPPED+=("Cursor onboarding hint (already shown)")
 fi
 
-# ── Global gitignore: ensure '.ai/' is ignored everywhere ────────────────────
+# ── Global gitignore: ensure '.ai/' and '.worktrees/' are ignored everywhere ─
 
 GLOBAL_IGNORE="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 mkdir -p "$(dirname "$GLOBAL_IGNORE")"
@@ -366,6 +366,12 @@ if ! grep -qxF '.ai/' "$GLOBAL_IGNORE"; then
   COPIED+=("global gitignore (.ai/ added)")
 else
   SKIPPED+=("global gitignore (.ai/ already present)")
+fi
+if ! grep -qxF '.worktrees/' "$GLOBAL_IGNORE"; then
+  printf '\n# ai-dotfiles: per-repo parallel-session worktrees\n.worktrees/\n' >> "$GLOBAL_IGNORE"
+  COPIED+=("global gitignore (.worktrees/ added)")
+else
+  SKIPPED+=("global gitignore (.worktrees/ already present)")
 fi
 
 # ── settings.json (copy logic for Claude/OpenCode) ───────────────────────────

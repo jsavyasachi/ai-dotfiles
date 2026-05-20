@@ -174,6 +174,32 @@ Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (g
 
 When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
 
+## Parallel sessions / worktrees
+
+This repo and downstream projects support multiple AI agents working in parallel on the same repo. To avoid branch / working-tree conflicts, isolate each non-trivial task in its own git worktree.
+
+When to create a worktree:
+- Starting a feature, bug fix, refactor, or any multi-step change.
+- Executing a written implementation plan.
+- Any time another AI session may already be working in the repo.
+
+When to skip:
+- Read-only inspection, trivial typo edits, single-file config tweaks.
+- The user explicitly says "work in place" or "don't worktree this."
+
+How to create one, per agent:
+
+| Agent | Mechanism |
+|---|---|
+| Claude Code | Use the native `EnterWorktree` tool. If the `superpowers` plugin is enabled, follow `superpowers:using-git-worktrees`. |
+| OpenCode / Gemini / Codex / Cursor | Manual fallback: `git worktree add .worktrees/<branch> -b <branch>` then `cd` in. |
+
+Directory: `.worktrees/` at the repo root. Ignored globally by `setup.sh`, so no per-repo `.gitignore` change is needed.
+
+Before creating one, run the Step 0 detection: if `git rev-parse --git-dir` differs from `git rev-parse --git-common-dir` (and you are not in a submodule), you are already in a worktree - reuse it instead of nesting.
+
+After creating: install deps for the stack (`npm install` / `cargo build` / `pip install -r requirements.txt` / `go mod download`) and run the baseline test suite before touching code.
+
 ## Session continuity
 
 This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked, covered by global gitignore).
