@@ -153,6 +153,7 @@ Minimum check:
 - 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 - hook system is plugin-based (`hooks.yaml`), deferred
 - 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands land regardless
 - 2026-05-04: cross-agent commit cadence commands are `/commit` and `/push`; no legacy aliases
+- 2026-05-31: SKILL.md/command `description:` must be single-quoted; enforced by `extensions/hooks/validate-skill-frontmatter.sh` via a git pre-commit hook (cross-agent: fires for any agent that commits) + a `setup.sh` self-check and re-quoting generator. Codex's strict YAML rejects unquoted `: `/` #`; Claude's lenient parser hides it
 
 ## Cross-agent config
 
@@ -171,6 +172,15 @@ Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md`
 Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
 
 Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and Gemini (`~/.gemini/skills/`) - Gemini v0.41+ has native Agent Skills, auto-registered as `/<name>` slash commands. Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
+
+### SKILL.md / command frontmatter: always single-quote `description:`
+
+YAML `description:` values in `SKILL.md` and `extensions/commands/*.md` break on two unquoted special-char footguns: `: ` (colon-space, e.g. "Idempotent: re-running") makes strict parsers hard-fail with "mapping values are not allowed in this context" and **skip the skill at load**; ` #` (space-hash) is read as a comment and **silently truncates** the value. Claude Code's parser is lenient and hides both - but Codex's is strict, so a skill that works in Claude can be broken for Codex. Always wrap the whole `description` value in single quotes (escape any literal `'` as `''`).
+
+This is enforced mechanically, not by convention:
+- **`extensions/hooks/validate-skill-frontmatter.sh`** - canonical, tool-agnostic validator (bash + `/usr/bin/ruby` YAML). Catches both footguns.
+- **Git pre-commit hook** (`extensions/hooks/pre-commit-skill-frontmatter.sh`, symlinked into `.git/hooks/pre-commit` by `setup.sh`) - blocks committing any staged `SKILL.md` / command `.md` with broken frontmatter. Cross-agent by construction: fires on `git commit` regardless of which agent staged the edit, unlike a Claude-only PreToolUse hook.
+- **`setup.sh` self-check** - validates all sources before distributing and aborts on failure; the command->skill generator re-quotes every `description` per target (YAML single-quote for Codex/OpenCode, TOML basic string for Gemini) so it can never emit a broken file.
 
 When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
 
