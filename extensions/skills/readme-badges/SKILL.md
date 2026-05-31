@@ -1,6 +1,6 @@
 ---
 name: readme-badges
-description: Generate or update the README "Stack" section using the AI.md shields.io badge convention. Triggers on "add stack badges", "update the README stack", "make this AI-native" when README work is in scope, on a new repo init where README is being written, and when a README is missing a "Stack" section or has stale badges. Produces anchor-wrapped shields.io badges (one per primary tech, brand hex color, correct logoColor for background, style=flat lowercase, contiguous lines so they render as a single row), in the AI.md ordering: foundation framework -> language -> libraries -> infra/deploy.
+description: 'Generate or update the README "Stack" section using the AI.md shields.io badge convention. Triggers on "add stack badges", "update the README stack", "make this AI-native" when README work is in scope, on a new repo init where README is being written, and when a README is missing a "Stack" section or has stale badges. Produces anchor-wrapped shields.io badges (one per primary tech, brand hex color, correct logoColor for background, style=flat lowercase, contiguous lines so they render as a single row), in the AI.md ordering: foundation framework -> language -> libraries -> infra/deploy.'
 allowed-tools: Read Write Edit Glob Grep
 ---
 

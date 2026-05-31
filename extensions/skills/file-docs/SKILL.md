@@ -1,6 +1,6 @@
 ---
 name: file-docs
-description: Generate concise sibling .md summary files for source code so future AI sessions can pull context without reading full files. Triggers on "document each file", "add per-file docs", "write file-level summaries", "generate AI context docs", "make AI-friendly docs for this dir", and on any explicit request for sibling-md context files. Walks a target directory, writes <file>.md next to each source file (skipping generated / vendored / lockfile / build-output paths), keeps each summary tight enough that an AI can Read the .md instead of the source. Idempotent: re-running on a clean tree is a no-op.
+description: 'Generate concise sibling .md summary files for source code so future AI sessions can pull context without reading full files. Triggers on "document each file", "add per-file docs", "write file-level summaries", "generate AI context docs", "make AI-friendly docs for this dir", and on any explicit request for sibling-md context files. Walks a target directory, writes <file>.md next to each source file (skipping generated / vendored / lockfile / build-output paths), keeps each summary tight enough that an AI can Read the .md instead of the source. Idempotent: re-running on a clean tree is a no-op.'
 allowed-tools: Read Write Edit Glob Grep Bash
 ---
 
