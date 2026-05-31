@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:docs.anthropic.com)",
+      "WebFetch(domain:code.claude.com)",
+      "WebFetch(domain:developers.openai.com)",
       "WebFetch(domain:opencode.ai)",
       "WebFetch(domain:geminicli.com)",
       "WebFetch(domain:github.com)"

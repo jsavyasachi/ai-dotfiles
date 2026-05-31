@@ -9,10 +9,11 @@ You are helping the user make a configuration change that must work correctly ac
 Use WebFetch on these pages when you need schema details for the relevant tool. Only fetch pages that apply to the change being requested - don't fetch all of them blindly.
 
 **Claude Code**
-- Settings reference: `https://docs.anthropic.com/en/docs/claude-code/settings`
-- Hooks: `https://docs.anthropic.com/en/docs/claude-code/hooks`
-- Slash commands: `https://docs.anthropic.com/en/docs/claude-code/slash-commands`
-- Memory / CLAUDE.md: `https://docs.anthropic.com/en/docs/claude-code/memory`
+- Settings reference: `https://code.claude.com/docs/en/settings`
+- Hooks: `https://code.claude.com/docs/en/hooks`
+- Slash commands: `https://code.claude.com/docs/en/slash-commands`
+- Skills: `https://code.claude.com/docs/en/skills`
+- Memory / CLAUDE.md: `https://code.claude.com/docs/en/memory`
 
 **OpenCode**
 - Configuration: `https://opencode.ai/docs/config`
@@ -23,8 +24,8 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
 - GitHub (settings.json schema): `https://github.com/google-gemini/gemini-cli/blob/main/docs/configuration.md`
 
 **Codex**
-- Config reference (config.toml): `https://github.com/openai/codex/blob/main/codex-cli/README.md`
-- Skills: `https://github.com/openai/codex/blob/main/codex-cli/docs/skills.md`
+- Config reference (config.toml): `https://github.com/openai/codex/blob/main/docs/config.md`
+- Skills: `https://developers.openai.com/codex/skills`
 
 ## Steps
 
