@@ -1,5 +1,5 @@
 ---
-description: Seal the current session into .ai/journal.md and auto-promote Decided items to AI.md ## Decisions
+description: 'Seal the current session into .ai/journal.md and auto-promote Decided items to AI.md ## Decisions'
 ---
 
 You are sealing the current session for the next agent (which may be a different CLI: Claude Code, Codex, OpenCode, or Gemini). The goal is a high-signal handoff, not a transcript.

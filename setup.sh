@@ -234,6 +234,23 @@ if [[ -L "$OPENCODE_DIR/skills" ]]; then
 fi
 mkdir -p "$OPENCODE_DIR/skills"
 
+# ── Guard: validate SKILL.md / command frontmatter before distributing ───────
+# Strict YAML parsers (Codex) reject ': ' / ' #' footguns in unquoted
+# `description:` values and skip the skill at load; lenient ones (Claude) hide
+# the problem. Abort here so a broken source is never symlinked or generated
+# out to any agent. Same validator the git pre-commit hook uses.
+FRONTMATTER_VALIDATOR="$DOTFILES_DIR/extensions/hooks/validate-skill-frontmatter.sh"
+if [[ -x "$FRONTMATTER_VALIDATOR" ]]; then
+  fm_files=()
+  for f in "$DOTFILES_DIR"/extensions/skills/*/SKILL.md "$DOTFILES_DIR"/extensions/commands/*.md; do
+    [[ -f "$f" ]] && fm_files+=("$f")
+  done
+  if [[ ${#fm_files[@]} -gt 0 ]] && ! "$FRONTMATTER_VALIDATOR" "${fm_files[@]}"; then
+    error "Invalid SKILL.md / command frontmatter (see above). Fix before running setup.sh."
+    exit 1
+  fi
+fi
+
 # ── Cross-agent commands: transform extensions/commands/*.md ─────────────────
 #
 # Single canonical source: extensions/commands/<name>.md (Markdown + YAML
@@ -292,22 +309,32 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   [[ -e "$src" ]] || continue
   name="$(basename "$src" .md)"
 
-  description="$(awk '/^---$/{n++; next} n==1 && /^description: /{sub(/^description: /, ""); print; exit}' "$src")"
+  # Extract the true scalar value of `description:` via a real YAML parser, so
+  # we get the unquoted text regardless of how the source author wrote it
+  # (quoted or not). Re-quoting per target below is then always correct.
+  description="$(/usr/bin/ruby -ryaml -e 'fm=File.read(ARGV[0])[/\A---\s*\n(.*?)\n---/m,1]||""; d=(YAML.safe_load(fm) rescue {}); print((d.is_a?(Hash) ? d["description"] : "").to_s)' "$src")"
   body="$(awk '/^---$/{n++; next} n>=2' "$src")"
 
   # Strip a single leading blank line from body if present.
   body="${body#$'\n'}"
 
+  # Re-quote the description for each target so special chars (': ', ' #',
+  # quotes) can never break the generated file:
+  #   YAML single-quoted scalar: escape ' as ''  (used for Codex/OpenCode)
+  #   TOML basic string:         escape \ then "  (used for Gemini)
+  desc_yaml="'${description//\'/\'\'}'"
+  desc_toml="${description//\\/\\\\}"; desc_toml="${desc_toml//\"/\\\"}"
+
   # Gemini TOML: description + triple-quoted prompt.
-  gemini_out=$'description = "'"${description//\"/\\\"}"$'"\nprompt = """\n'"$body"$'\n"""\n'
+  gemini_out=$'description = "'"$desc_toml"$'"\nprompt = """\n'"$body"$'\n"""\n'
   write_if_changed "$GEMINI_COMMANDS_DIR/$name.toml" "$gemini_out" "$name.toml (Gemini)"
 
   # OpenCode SKILL.md: same YAML frontmatter format as Codex.
-  opencode_out=$'---\nname: '"$name"$'\ndescription: '"$description"$'\n---\n\n'"$body"$'\n'
+  opencode_out=$'---\nname: '"$name"$'\ndescription: '"$desc_yaml"$'\n---\n\n'"$body"$'\n'
   write_if_changed "$OPENCODE_NATIVE_SKILLS_DIR/$name/SKILL.md" "$opencode_out" "$name/SKILL.md (OpenCode)"
 
   # Codex SKILL.md: YAML frontmatter (name + description) + body.
-  codex_out=$'---\nname: '"$name"$'\ndescription: '"$description"$'\n---\n\n'"$body"$'\n'
+  codex_out=$'---\nname: '"$name"$'\ndescription: '"$desc_yaml"$'\n---\n\n'"$body"$'\n'
   write_if_changed "$CODEX_NATIVE_SKILLS_DIR/$name/SKILL.md" "$codex_out" "$name/SKILL.md (Codex)"
 done
 
@@ -372,6 +399,24 @@ if ! grep -qxF '.worktrees/' "$GLOBAL_IGNORE"; then
   COPIED+=("global gitignore (.worktrees/ added)")
 else
   SKIPPED+=("global gitignore (.worktrees/ already present)")
+fi
+
+# ── git pre-commit hook: gate SKILL.md / command frontmatter ─────────────────
+# Cross-agent by construction: fires on `git commit` no matter which agent
+# staged the change (all commit through git), unlike a Claude-only PreToolUse
+# hook. Symlinked from the repo so edits to the hook script are picked up
+# without re-running setup.sh.
+GIT_HOOK_SRC="$DOTFILES_DIR/extensions/hooks/pre-commit-skill-frontmatter.sh"
+GIT_HOOK_DIR="$DOTFILES_DIR/.git/hooks"
+if [[ -d "$GIT_HOOK_DIR" && -f "$GIT_HOOK_SRC" ]]; then
+  GIT_HOOK_DEST="$GIT_HOOK_DIR/pre-commit"
+  if [[ -L "$GIT_HOOK_DEST" && "$(readlink "$GIT_HOOK_DEST")" == "$GIT_HOOK_SRC" ]]; then
+    SKIPPED+=("pre-commit hook (already installed)")
+  else
+    [[ -e "$GIT_HOOK_DEST" || -L "$GIT_HOOK_DEST" ]] && backup_if_needed "$GIT_HOOK_DEST"
+    ln -sf "$GIT_HOOK_SRC" "$GIT_HOOK_DEST"
+    SYMLINKED+=("pre-commit hook → extensions/hooks/pre-commit-skill-frontmatter.sh")
+  fi
 fi
 
 # ── settings.json (copy logic for Claude/OpenCode) ───────────────────────────
