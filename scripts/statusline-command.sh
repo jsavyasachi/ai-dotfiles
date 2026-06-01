@@ -77,7 +77,7 @@ if [ -n "$ctx_max" ]; then
   while [ "$i" -lt 10        ]; do bar="${bar}░"; i=$(( i+1 )); done
 
   used_tokens=$(awk "BEGIN{printf \"%d\", $ctx_pct/100 * $ctx_max}")
-  ctx_part="${DIM}$(fmt_k "$used_tokens")/$(fmt_k "$ctx_max")${R}  ${bar_col}${bar}${R} ${DIM}${ctx_pct}%${R}"
+  ctx_part="${DIM}$(fmt_k "$used_tokens")/$(fmt_k "$ctx_max")${R} ${bar_col}${bar}${R} ${DIM}${ctx_pct}%${R}"
 fi
 
 # ── 4. rate-limit windows (5h + weekly), showing % left ──────────────────────
