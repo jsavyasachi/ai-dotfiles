@@ -115,7 +115,7 @@ fi
 
 # ── assemble ─────────────────────────────────────────────────────────────────
 out=""
-for part in "$git_part" "$model_part" "$ctx_part" "$rl_part" "$lines_part" "$cost_part"; do
+for part in "$git_part" "$lines_part" "$model_part" "$ctx_part" "$rl_part" "$cost_part"; do
   [ -z "$part" ] && continue
   [ -n "$out" ] && out="${out}${SEP}"
   out="${out}${part}"
