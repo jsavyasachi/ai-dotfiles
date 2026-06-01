@@ -1,6 +1,6 @@
 #!/bin/sh
 # Claude Code status line
-# Format: repo@branch ✗ ↑↓ │ Model │ tokens ████░░ 26% │ 5h 99% · wk 100% │ +A/-D │ $0.012
+# Format: repo@branch ✗ ↑↓ · +A/-D · Model · tokens ████░░ 26% · 5h 99% · wk 100% · $0.012
 # NOTE: "effort/thinking" not yet in statusline JSON - tracked at
 #       github.com/anthropics/claude-code/issues/13158
 
@@ -12,7 +12,7 @@ BOLD="${ESC}[1m"
 GREEN="${ESC}[32m"
 YELLOW="${ESC}[33m"
 RED="${ESC}[31m"
-SEP="${DIM} │ ${R}"
+SEP="${DIM} · ${R}"
 
 # ── parse ──────────────────────────────────────────────────────────────────
 cwd=$(echo "$input"    | jq -r '.workspace.current_dir // .cwd // ""')
