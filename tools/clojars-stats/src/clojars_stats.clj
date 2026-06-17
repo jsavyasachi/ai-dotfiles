@@ -16,7 +16,7 @@
 (def artifacts
   ["hier-set" "lein-shell" "lein-environ" "beckon" "beckon-ffm" "inet.data"
    "environ" "digest" "clj-xchart" "jackdaw" "cljgrapht" "dogstatsd"
-   "anthropic-clj" "anthropic-sdk-clj"])
+   "anthropic-clj" "anthropic-sdk-clj" "buddy-auth"])
 
 ;; ---------------------------------------------------------------------------
 ;; Pure core (unit-tested; no IO)
