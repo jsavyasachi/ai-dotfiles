@@ -1,0 +1,9 @@
+{:paths ["src" "test"]
+ :tasks
+ {test {:doc "Run unit tests"
+        :requires ([clojure.test :as t] [clojars-stats-test])
+        :task (let [{:keys [fail error]} (t/run-tests 'clojars-stats-test)]
+                (System/exit (if (pos? (+ fail error)) 1 0)))}
+  pull {:doc "Pull + render stats. Pass --feed N for the daily time series."
+        :requires ([clojars-stats])
+        :task (apply clojars-stats/-main *command-line-args*)}}}
