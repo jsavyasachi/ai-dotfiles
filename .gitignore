@@ -40,3 +40,6 @@ extensions/skills/*
 
 # macOS
 .DS_Store
+
+# private AI memory - never public (symlinked from ~/.claude)
+extensions/memory/
