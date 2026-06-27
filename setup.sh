@@ -451,6 +451,7 @@ sync_settings() {
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
 merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config" "@@DOTFILES_DIR@@" "$DOTFILES_DIR"
+cp "$DOTFILES_DIR/config/cursor-mcp.json" "$CURSOR_DIR/mcp.json"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 
