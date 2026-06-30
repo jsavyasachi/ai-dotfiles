@@ -37,6 +37,7 @@ extensions/skills/*
 !extensions/skills/tdd/
 !extensions/skills/readme-badges/
 !extensions/skills/clojure-lib-revival/
+!extensions/skills/delegate/
 
 # macOS
 .DS_Store
