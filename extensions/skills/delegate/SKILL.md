@@ -1,18 +1,19 @@
 ---
 name: delegate
-description: 'Delegate a well-defined coding task to Codex as a non-interactive subagent. Claude crafts a self-contained prompt from the current plan or context, runs `codex exec` in workspace-write mode, then diffs and reviews the result. Triggers on: "delegate to codex", "have codex implement this", "offload to codex", "let codex do this", "use codex for [task]", "now have codex implement the plan".'
+description: 'Delegate a well-defined coding task to Codex as a non-interactive subagent. Claude crafts a self-contained prompt from the current plan or context, runs `codex exec` in workspace-write mode, then diffs and reviews the result. Triggers on: "delegate to codex", "have codex implement this", "offload to codex", "let codex do this", "use codex for [task]", "now have codex implement the plan", "have codex review this", "let codex write tests".'
 allowed-tools: Bash Read
 ---
 
 # delegate
 
-Hand off a well-defined task to Codex (`codex exec`), then diff and review the result.
+Hand off a well-defined task to Codex (`codex exec`), then diff or display and review the result.
 
 ## When to trigger
 
-- "delegate to codex", "have codex implement this", "offload to codex", "let codex do this"
-- After producing a plan: "now have codex implement it"
-- Any time the task is mechanical and the strategy is already settled
+- **Implement**: "delegate to codex", "have codex implement this", "offload to codex", "now have codex implement the plan"
+- **Review**: "have codex review this", "let codex review the diff", "codex review"
+- **Tests**: "have codex write tests for X", "let codex add tests"
+- **Refactor/docs/migrations**: any mechanical task where the approach is already settled
 
 ## Steps
 
@@ -31,13 +32,13 @@ Do NOT reference "our conversation", "as discussed", or "the plan above".
 
 ### 2. Run Codex
 
-For most tasks (write/edit code, write tests, refactor):
+**Write tasks** (implement, refactor, tests, docs, migrations):
 
 ```bash
 codex exec -s workspace-write "PROMPT"
 ```
 
-For large prompts (> ~300 words), write to a temp file and pipe:
+For large prompts (> ~300 words), pipe via stdin:
 
 ```bash
 cat > /tmp/codex-task.txt << 'EOF'
@@ -46,20 +47,25 @@ EOF
 codex exec -s workspace-write < /tmp/codex-task.txt
 ```
 
-Flags:
-- `-s workspace-write` - Codex can write files in the project without per-step approval; shell commands still get sandboxed
-- Run from the project root (Codex uses cwd as workspace root)
-- Codex may take several minutes; use a generous timeout (600000ms / 10 min)
+- `-s workspace-write` - Codex writes files without per-step approval; shell commands still sandboxed
+- Run from the project root
+- Codex may take several minutes; use a 10-min timeout (600000ms)
 
-For read-only tasks (review, analysis):
+**Code review** (dedicated subcommand, reviews current repo diff):
 
 ```bash
-codex exec -s read-only "PROMPT"
+codex exec review
 ```
 
-### 3. Show the diff
+Or with a focused prompt for a specific concern:
 
-After Codex completes, run:
+```bash
+codex exec -s read-only "Review the changes in git diff HEAD. Focus on: SPECIFIC_CONCERN"
+```
+
+### 3. Show results
+
+For write tasks, show the diff after Codex completes:
 
 ```bash
 git diff
@@ -74,8 +80,10 @@ git status           # untracked files Codex may have created
 
 Print the full diff output to the user - do not abbreviate it.
 
+For review tasks, print Codex's review output in full.
+
 ### 4. Review and report
 
-- Compare the diff to what was requested: did Codex do the right thing?
+- Compare result to what was requested: did Codex do the right thing?
 - Flag anything missing, incorrect, or unexpected
-- Ask the user: commit as-is, iterate with another `codex exec`, or revert (`git checkout -- .`)
+- For write tasks, ask: commit as-is, iterate with another `codex exec`, or revert (`git checkout -- .`)
