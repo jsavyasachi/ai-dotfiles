@@ -32,6 +32,21 @@ lein test     # may not even compile
 ```
 Map Clojars (`https://clojars.org/<lib>`): who owns the group, last version/date.
 
+**Audit the upstream backlog NOW, not after shipping.** The open issues + PRs are the
+spec for what the revival should fix and what features it should carry - skipping this
+ships a bare modernization that misses years of asked-for work.
+```bash
+gh issue list -R <upstream>/<lib> --state open -L 50
+gh pr list    -R <upstream>/<lib> --state open -L 50
+gh pr view <n> -R <upstream>/<lib> --json title,body,files,additions,deletions  # mine substance
+```
+Triage each into: (a) **incidentally closed** by your modernization (note it in the PR/CHANGES),
+(b) **real un-addressed asks** worth building (features, the most-recent PR's net-new code), or
+(c) **out of scope / deferred**. The most recent PR often holds the best ideas (a half-finished
+feature, a modular split, a dep family nobody merged). This audit can turn a rename into a
+feature-bearing major version - that is the point of a revival vs a fork. (psql-clj: a 7-issue/2-PR
+sweep produced a modular 2.0.0 with enum/geography/RDS-IAM that a bare rename would have missed.)
+
 ### Phase 1 - Modernize (TDD, one concern per Conventional Commit)
 
 Rename the fork to `main` first (user preference: always `main`, never `master`):
@@ -74,6 +89,36 @@ steps:
 ```
 Confirm every cell green:
 `gh run view <id> -R <you>/<lib> --json jobs -q '.jobs[]|"\(.name): \(.conclusion)"'`
+
+### Phase 2b - Repo hygiene (do this on EVERY revived repo, not just greenfield)
+
+A fork is still a new repo of yours - it needs the same bootstrap as a fresh one.
+Easy to skip because it "already exists"; don't.
+
+- **Community-health files, per-repo (not a shared `.github` defaults repo):**
+  `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `.github/ISSUE_TEMPLATE/{bug_report,feature_request}.md`,
+  `.github/PULL_REQUEST_TEMPLATE.md`. Copy the canonical set verbatim from a recent
+  lib (e.g. `~/projects/stdnum-clj`); only `CONTRIBUTING.md` needs tailoring (lib name,
+  build/test commands, module layout). Stay generic - no AI footprint. (Memory:
+  `feedback_community-health-files`.)
+- **GitHub "About" for discoverability:** description + homepage (cljdoc
+  `https://cljdoc.org/d/<group>/<lib>/CURRENT`) + topics.
+  `gh repo edit <you>/<lib> --description "..." --homepage "..." --add-topic clojure,clojure-library,<domain-tags>`
+  Topic convention: lowercase, always `clojure clojure-library` + 6-8 domain tags.
+- **Dependency automation = antq, NOT Renovate** (Renovate has no Leiningen manager;
+  Dependabot has no Clojure). Copy `.github/workflows/deps.yml` from a recent lib
+  (weekly antq → `peter-evans/create-pull-request`). Mandatory antq flags:
+  `--skip=github-action` (token can't push workflow pins) and
+  `--exclude org.clojure/clojure` (else it collapses the `:clojure-1-1x` matrix).
+  Monorepo: add `--directory <each>` for every `project.clj` and
+  `--exclude <your-own-intermodule-coordinate>`. One-time setting:
+  `gh api -X PUT repos/<you>/<lib>/actions/permissions/workflow -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true`.
+  **Gotcha:** PRs opened by the default `GITHUB_TOKEN` do NOT trigger the test
+  workflow (GitHub anti-recursion) - antq dep PRs land with no CI; validate locally
+  or push an empty commit before merging. (Memory: `feedback_clojure-dep-automation`.)
+- Verify: `gh api repos/<you>/<lib>/contents/CODE_OF_CONDUCT.md` and
+  `gh repo view <you>/<lib> --json repositoryTopics`.
 
 ### Phase 3 - Publish to Clojars (self-publish fast path = realistic default)
 
