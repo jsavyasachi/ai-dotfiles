@@ -359,7 +359,7 @@ for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   shadow="$HOME/.agents/skills/$skill_name"
   if [[ -d "$shadow" || -L "$shadow" ]]; then
     rm -rf "$shadow"
-    REMOVED+=("~/.agents/skills/$skill_name (was shadowing $skill_name in ~/.gemini/skills)")
+    REMOVED+=("$HOME/.agents/skills/$skill_name (was shadowing $skill_name in $HOME/.gemini/skills)")
   fi
 done
 

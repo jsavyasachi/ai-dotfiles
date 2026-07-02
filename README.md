@@ -78,3 +78,5 @@ Cross-agent parity work goes through the `/configure-agents` command, which fetc
 make test   # installer checks
 make lint   # bash syntax
 ```
+
+CI runs both targets on macOS and Linux for every PR and push to `main`.
