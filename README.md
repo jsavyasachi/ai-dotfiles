@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-Cross-machine AI agent configuration for Claude Code, OpenCode, Gemini CLI, Codex, and Cursor.
+Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, Gemini CLI, Codex, and Cursor.
 
 ## Stack
 
@@ -21,23 +21,35 @@ bash setup.sh
 
 Idempotent: safe to re-run after pulling updates.
 
-## What you get
+## What You Get
 
-**Universal instructions**: `instructions/AI.md` symlinked to every agent. One edit, all agents updated. Cursor consumes the same `AGENTS.md` symlink that Codex does (per-repo); for Cursor's global User Rules, paste `instructions/AI.md` into Cursor Settings > Rules once per machine (setup prints a one-time hint).
+**Universal instructions**: `instructions/AI.md` is the canonical source. `instructions/{CLAUDE,OPENCODE,GEMINI,AGENTS}.md` are symlinks to it, and `setup.sh` installs those into each agent's home. Cursor consumes `AGENTS.md` per repo; global Cursor User Rules still require a one-time paste into Settings > Rules.
 
-**Cross-agent commands**: canonical `.md` files in `extensions/commands/`, distributed by `setup.sh` in each agent's native format:
+**Cross-agent commands**: canonical `.md` files live in `extensions/commands/`. `setup.sh` installs them in each tool's native shape:
+
+| Agent | Install format |
+|---|---|
+| Claude Code | `~/.claude/commands/<name>.md` symlink |
+| OpenCode | `~/.config/opencode/commands/<name>.md` symlink + generated `skills/<name>/SKILL.md` |
+| Gemini CLI | generated `~/.gemini/commands/<name>.toml` |
+| Codex | generated `~/.codex/skills/<name>/SKILL.md` |
+| Cursor | not global; per-project commands only |
 
 | Command | What it does |
 |---|---|
-| `/handoff` | Seal session → `.ai/journal.md`, optionally promote decisions to `AI.md` |
+| `/handoff` | Seal session into `.ai/journal.md`; append decisions to `AI.md` / `instructions/AI.md` |
 | `/catchup [N]` | Replay last N journal entries + durable decisions |
 | `/commit` | Commit current logical unit (Conventional Commits) |
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
 
-**Stop hook**: soft dirty-tree warning on session end (Claude Code, Codex).
+**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path.
 
-**Status line**: repo@branch, git indicators, context usage bar (Claude Code).
+**Hooks and guardrails**: Claude Code and Codex get a soft dirty-tree Stop hook. Claude Code also gets a PreToolUse reminder before edits to agent config surfaces. Git gets a repo-local pre-commit hook that validates command and skill frontmatter for every agent.
+
+**Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex uses the native TUI status-line config in `config/codex.toml.tpl`.
+
+**Session continuity**: downstream repos use untracked `.ai/journal.md` for handoff/catchup state and tracked `AI.md` decisions for durable project policy.
 
 ## Repo layout: where to edit what
 
@@ -48,8 +60,8 @@ Idempotent: safe to re-run after pulling updates.
 | Hooks (Claude Code, e.g. Stop, PreToolUse) | `extensions/hooks/<name>.sh` + reference it in `config/settings.json.tpl` | The hooks dir is symlinked to `~/.claude/hooks/`; settings template is rendered to `~/.claude/settings.json` with absolute paths. |
 | Hooks (Codex) | `config/codex.toml.tpl` `[hooks]` block | Merged into `~/.codex/config.toml` inside an `ai-dotfiles managed` block (preserves your other Codex config). |
 | Memory (Claude Code) | `extensions/memory/MEMORY.md` and `extensions/memory/<topic>.md` | Symlinked into `~/.claude/projects/<encoded-projects-path>/memory/`. |
-| Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/` and `~/.codex/skills/`; generated `<name>.toml` user-invoked command in `~/.gemini/commands/` (Gemini has no model-invoked skill mechanism). Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
-| Per-agent settings (Claude / OpenCode / Codex) | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl` | `setup.sh` renders templates with absolute paths and writes them to each agent's home. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
+| Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/`, `~/.codex/skills/`, and `~/.gemini/skills/`. Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
+| Per-agent settings (Claude / OpenCode / Codex / Cursor MCP) | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths, merges Codex config into an `ai-dotfiles managed` block, and copies Cursor MCP config. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
 | Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
 | Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |
 | Stop-hook dirty-tree behavior | `scripts/dirty-tree-check.sh` | Symlinked to `~/.claude/`; Codex references it via absolute path in the merged config block. |
