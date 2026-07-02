@@ -184,17 +184,10 @@ fi
 
 # ── Universal Instructions (AI.md) ────────────────────────────────────────────
 
-# Map agent instruction files to their homes
-declare -A INSTRUCTION_MAP=(
-  ["CLAUDE.md"]="$CLAUDE_DIR/CLAUDE.md"
-  ["OPENCODE.md"]="$OPENCODE_DIR/OPENCODE.md"
-  ["GEMINI.md"]="$GEMINI_DIR/GEMINI.md"
-  ["AGENTS.md"]="$CODEX_DIR/AGENTS.md"
-)
-
-for item in "${!INSTRUCTION_MAP[@]}"; do
-  make_symlink "$DOTFILES_DIR/instructions/$item" "${INSTRUCTION_MAP[$item]}"
-done
+make_symlink "$DOTFILES_DIR/instructions/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+make_symlink "$DOTFILES_DIR/instructions/OPENCODE.md" "$OPENCODE_DIR/OPENCODE.md"
+make_symlink "$DOTFILES_DIR/instructions/GEMINI.md" "$GEMINI_DIR/GEMINI.md"
+make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
 
 # ── Shared statusline ─────────────────────────────────────────────────────────
 
@@ -478,6 +471,7 @@ fi
 
 printf '\n\033[1mSummary\033[0m\n'
 
+set +u
 for f in "${COPIED[@]}"; do success "Copied:    $f"; done
 for f in "${SYMLINKED[@]}"; do success "Symlinked: $f"; done
 for f in "${MERGED[@]}"; do success "Merged:    $f"; done
@@ -496,3 +490,4 @@ if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${
 else
   printf '\nDone. AI agent settings are live.\n'
 fi
+set -u

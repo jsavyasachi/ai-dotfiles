@@ -40,7 +40,7 @@ assert_eq() {
 
 run_setup() {
   local home_dir="$1"
-  HOME="$home_dir" PATH="$BASE_PATH" "$BASH_BIN" "$REPO_ROOT/setup.sh"
+  HOME="$home_dir" XDG_CONFIG_HOME="$home_dir/.config" PATH="$BASE_PATH" "$BASH_BIN" "$REPO_ROOT/setup.sh"
 }
 
 test_fresh_install() {
