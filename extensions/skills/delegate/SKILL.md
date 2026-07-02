@@ -50,6 +50,9 @@ codex exec -s workspace-write < /tmp/codex-task.txt
 - `-s workspace-write` - Codex writes files without per-step approval; shell commands still sandboxed
 - Run from the project root
 - Codex may take several minutes; use a 10-min timeout (600000ms)
+- Output streams in real-time through the Bash tool as Codex works
+- Codex runs in a separate process: its internal tool calls, file reads, and reasoning do NOT land in Claude's context window - only the final stdout (diff or review) does
+- Add `--json` for a JSONL event stream instead of formatted output (useful for programmatic parsing)
 
 **Code review** (dedicated subcommand, reviews current repo diff):
 
