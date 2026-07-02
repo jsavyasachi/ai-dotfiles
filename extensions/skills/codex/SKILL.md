@@ -1,5 +1,5 @@
 ---
-name: delegate
+name: codex
 description: 'Delegate a well-defined coding task to Codex as a non-interactive subagent. Claude crafts a self-contained prompt from the current plan or context, runs `codex exec` in workspace-write mode, then diffs and reviews the result. Triggers on: "delegate to codex", "have codex implement this", "offload to codex", "let codex do this", "use codex for [task]", "now have codex implement the plan", "have codex review this", "let codex write tests".'
 allowed-tools: Bash Read
 ---
