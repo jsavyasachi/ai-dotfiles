@@ -44,6 +44,15 @@ Technical accuracy. Real gotchas. Process steps (compress wording, not steps). N
 
 Ask one question at a time. Never bundle multiple questions in a single message.
 
+When the answer space is discrete/enumerable, use the agent's structured question tool instead of plain text:
+- Claude Code: `AskUserQuestion`
+- Gemini CLI: `ask_user` (`choice` type)
+- OpenCode: `question` tool
+- Codex: `request_user_input` - Plan Mode only; falls back to plain text with enumerated options elsewhere
+- Cursor: no confirmed structured tool - ask in plain text with 2-4 enumerated options
+
+Open-ended questions (no enumerable options) stay plain text on every agent.
+
 ## Response format
 
 End every response with a confidence score:
@@ -154,6 +163,7 @@ Minimum check:
 - 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands land regardless
 - 2026-05-04: cross-agent commit cadence commands are `/commit` and `/push`; no legacy aliases
 - 2026-05-31: SKILL.md/command `description:` must be single-quoted; enforced by `extensions/hooks/validate-skill-frontmatter.sh` via a git pre-commit hook (cross-agent: fires for any agent that commits) + a `setup.sh` self-check and re-quoting generator. Codex's strict YAML rejects unquoted `: `/` #`; Claude's lenient parser hides it
+- 2026-07-08: clarifying-question policy is agent-conditional - Claude Code uses `AskUserQuestion`, Gemini CLI uses `ask_user`, OpenCode uses `question`, Codex's `request_user_input` is Plan-Mode-only, Cursor has no confirmed structured tool so it asks in plain text with enumerated options
 
 ## Cross-agent config
 
