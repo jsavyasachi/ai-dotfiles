@@ -122,7 +122,18 @@ Skip TDD only for: pure mechanical edits (renames, formatting, dependency bumps)
 
 ## READMEs
 
-Every project README must include a `## Stack` section right after the H1 + tagline. Format: shields.io badges, anchor-wrapped, one per technology, on contiguous lines (no blank lines between: they render as a single row).
+Every project README must include a `## Stack` section. Preserve the established
+header convention for the repository. For Clojure projects, use this order:
+
+1. H1.
+2. Existing Clojars, cljdoc, and CI status badges.
+3. Tagline or short introductory copy.
+4. `## Stack`.
+
+For new repositories without status badges, put `## Stack` directly after the
+H1 + tagline. Format stack badges as shields.io badges, anchor-wrapped, one per
+technology, on contiguous lines (no blank lines between: they render as a
+single row).
 
 ```markdown
 ## Stack
@@ -133,7 +144,7 @@ Every project README must include a `## Stack` section right after the H1 + tagl
 
 Rules:
 - One badge per primary tech: framework, language, runtime, key libraries, deploy target, test runner, DB. Skip transitive deps.
-- Color is the brand hex (Astro `#FF5D01`, React `#61DAFB`, Tailwind `#06B6D4`, TypeScript `#3178C6`, Vercel `#000000`, etc.). Use `logoColor=000` on light brand backgrounds, `logoColor=white` on dark.
+- Color is the brand hex (Astro `#FF5D01`, React `#61DAFB`, Tailwind `#06B6D4`, TypeScript `#3178C6`, Vercel `#000000`, etc.). Use `logoColor=000` on light brand backgrounds. For Clojure repositories, use the established `logoColor=fff` convention on dark backgrounds; otherwise use `logoColor=white`.
 - `style=flat`, always lowercase the `?style` query.
 - Each badge wrapped in `<a href="…">` to the canonical homepage.
 - Order: foundation framework first, then language, then libraries, then infra/deploy last.
