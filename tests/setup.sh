@@ -157,6 +157,24 @@ test_dirty_tree_check() {
   assert_eq "$dirty_output" "[ai-dotfiles] working tree dirty at session end - consider /commit" "dirty repo warning mismatch"
 }
 
+test_codex_orchestration_skill() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-codex-skill.XXXXXX)"
+
+  run_setup "$home_dir" >/dev/null
+
+  local skill_dir="$home_dir/.codex/skills/codex"
+  assert_exists "$skill_dir/SKILL.md"
+  assert_exists "$skill_dir/references/execution.md"
+  assert_exists "$skill_dir/references/review.md"
+  assert_exists "$skill_dir/references/parallelism.md"
+  assert_exists "$skill_dir/templates/task-prompt.md"
+  assert_file_contains "$skill_dir/SKILL.md" 'Capture the baseline before dispatch'
+  assert_file_contains "$skill_dir/SKILL.md" 'codex exec resume'
+  assert_file_contains "$skill_dir/SKILL.md" 'Never use `git checkout -- .`'
+  assert_file_contains "$skill_dir/references/review.md" 'Treat agent narration as a claim'
+}
+
 test_backup_of_conflicting_files() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-backup.XXXXXX)"
@@ -180,6 +198,7 @@ main() {
   test_codex_merge_preserves_local_state
   test_cross_agent_commands
   test_dirty_tree_check
+  test_codex_orchestration_skill
   test_backup_of_conflicting_files
   printf 'PASS: setup.sh\n'
 }
