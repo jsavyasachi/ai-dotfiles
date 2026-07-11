@@ -43,7 +43,7 @@ Idempotent: safe to re-run after pulling updates.
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
 
-**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path.
+**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path. The `codex` skill delegates scoped work through isolated worktrees, resumable JSONL sessions, independent verification, and bounded review; parallel writers require separate worktrees and non-overlapping file claims.
 
 **Hooks and guardrails**: Claude Code and Codex get a soft dirty-tree Stop hook. Claude Code also gets a PreToolUse reminder before edits to agent config surfaces. Git gets a repo-local pre-commit hook that validates command and skill frontmatter for every agent.
 

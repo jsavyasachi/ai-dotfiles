@@ -194,6 +194,8 @@ Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/config
 
 Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and Gemini (`~/.gemini/skills/`) - Gemini v0.41+ has native Agent Skills, auto-registered as `/<name>` slash commands. Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
 
+The `codex` skill is the cross-agent delegation workflow. It captures the repository baseline, isolates non-trivial writes in worktrees, gives Codex explicit file ownership and authorization boundaries, persists resumable JSONL sessions when needed, independently verifies the result, and limits repair/review loops. Parallel Codex writers require separate worktrees and non-overlapping file claims.
+
 ### SKILL.md / command frontmatter: always single-quote `description:`
 
 YAML `description:` values in `SKILL.md` and `extensions/commands/*.md` break on two unquoted special-char footguns: `: ` (colon-space, e.g. "Idempotent: re-running") makes strict parsers hard-fail with "mapping values are not allowed in this context" and **skip the skill at load**; ` #` (space-hash) is read as a comment and **silently truncates** the value. Claude Code's parser is lenient and hides both - but Codex's is strict, so a skill that works in Claude can be broken for Codex. Always wrap the whole `description` value in single quotes (escape any literal `'` as `''`).
