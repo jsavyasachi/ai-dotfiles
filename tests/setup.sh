@@ -171,6 +171,7 @@ test_codex_orchestration_skill() {
   assert_exists "$skill_dir/templates/task-prompt.md"
   assert_file_contains "$skill_dir/SKILL.md" 'Capture the baseline before dispatch'
   assert_file_contains "$skill_dir/SKILL.md" 'codex exec resume'
+  # shellcheck disable=SC2016 # Backticks are literal Markdown code delimiters.
   assert_file_contains "$skill_dir/SKILL.md" 'Never use `git checkout -- .`'
   assert_file_contains "$skill_dir/references/review.md" 'Treat agent narration as a claim'
 }
