@@ -99,6 +99,10 @@ demoted to a `lein-tools-deps` shim. Golden references in `~/projects`: `jose-cl
    and `:scm` (`github.com/<you>/<lib>`, `:tag (str "v" version)`). **Java/AOT libs add
    `b/javac`** (and `b/compile-clj` for `:aot`) before `b/jar` - the plain template does
    NOT compile Java, so its jar would ship without the `.class` files.
+   **`clean` must also `(b/delete {:path "pom.xml"})`** and you should `rm -f pom.xml`
+   once: a converted lein repo has a stale, gitignored root `pom.xml` that `write-pom`
+   silently uses as a template, leaking the OLD license into the jar and ignoring
+   `:pom-data`. (CI is fine on a fresh checkout; this bites local builds.)
 3. **`tests.edn`** - `#kaocha/v1`. Replace lein `:test-selectors` with kaocha meta:
    an integration-gated suite becomes `{:tests [{:id :unit :skip-meta [:integration]}]}`
    so `clojure -M:test` runs unit-only and `^:integration` tests run on demand.
@@ -109,6 +113,11 @@ demoted to a `lein-tools-deps` shim. Golden references in `~/projects`: `jose-cl
      :middleware [lein-tools-deps.plugin/resolve-dependencies-with-deps-edn]
      :lein-tools-deps/config {:config-files [:install :user :project]})
    ```
+   If the lib has `^:integration` tests that do NOT self-guard on an env var, the shim
+   must ALSO keep `:test-selectors {:default (complement :integration) :integration
+   :integration :all (constantly true)}` - otherwise `lein test` runs the integration
+   suite (network/DB) and errors, since kaocha's `tests.edn` skip-meta only governs
+   `clojure -M:test`.
    **Exception - Leiningen plugins** (e.g. `lein-shell`): a plugin's runtime *is*
    Leiningen (`:eval-in-leiningen true`), so it **stays lein-first** - `project.clj`
    remains the real build; a `deps.edn` there would only serve REPL/test, not publish.
