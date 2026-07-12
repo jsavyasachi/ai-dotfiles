@@ -4,6 +4,10 @@ Watch download stats for the `net.clojars.savya` Clojars artifacts and surface t
 only signal that matters: a version pulling ahead of its siblings (the fingerprint of
 a real dependent, vs. the uniform per-version floor a crawler/cljdoc leaves behind).
 
+## Stack
+
+<a href="https://clojure.org"><img src="https://img.shields.io/badge/Clojure-5881D8?style=flat&logo=clojure&logoColor=fff" alt="Clojure" /></a>
+
 ## Usage
 
 ```bash

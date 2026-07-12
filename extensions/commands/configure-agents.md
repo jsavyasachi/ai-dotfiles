@@ -1,8 +1,8 @@
 ---
-description: Fetch each AI tool's official docs and propose a cross-agent settings change across Claude Code, OpenCode, Gemini CLI, and Codex
+description: 'Fetch each AI tool''s official docs and propose a cross-agent settings change across Claude Code, OpenCode, Gemini CLI, Codex, and Cursor'
 ---
 
-You are helping the user make a configuration change that must work correctly across all four AI agents in this repo: Claude Code, OpenCode, Gemini CLI, and Codex. Your job is to fetch the relevant official docs, read the current local config state, propose the full cross-agent diff, and only touch files after explicit approval.
+You are helping the user make a configuration change that must work correctly across all five AI agents in this repo: Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. Your job is to fetch the relevant official docs, read the current local config state, propose the full cross-agent diff, and only touch files after explicit approval.
 
 ## Doc index
 
@@ -24,8 +24,13 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
 - GitHub (settings.json schema): `https://github.com/google-gemini/gemini-cli/blob/main/docs/configuration.md`
 
 **Codex**
-- Config reference (config.toml): `https://github.com/openai/codex/blob/main/docs/config.md`
+- Config reference (config.toml): `https://developers.openai.com/codex/config-reference`
 - Skills: `https://developers.openai.com/codex/skills`
+
+**Cursor**
+- Rules: `https://cursor.com/docs/context/rules`
+- MCP: `https://cursor.com/docs/context/mcp`
+- Hooks: `https://cursor.com/docs/agent/hooks`
 
 ## Steps
 
@@ -33,6 +38,7 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
    - `config/settings.json.tpl` - Claude Code settings template
    - `config/opencode.json.tpl` - OpenCode settings template
    - `config/codex.toml.tpl` - Codex config template
+   - `config/cursor-mcp.json` - Cursor MCP configuration
    - `instructions/AI.md` - cross-agent policies and capability table
    - `extensions/commands/` - current cross-agent commands
 
@@ -43,13 +49,14 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
    - OpenCode: JSON (opencode.json.tpl)
    - Gemini CLI: TOML (generated from extensions/commands/ .md files via setup.sh)
    - Codex: TOML (config.toml.tpl) or SKILL.md (extensions/commands/ → setup.sh)
-   - If a change cannot be expressed equivalently in all 4 formats, flag the gap explicitly and propose the closest equivalent or "N/A - not supported".
+   - Cursor: MCP JSON, project `AGENTS.md`, project `.cursor/commands/`, project `.cursor/hooks/`, or Settings UI instructions as supported
+   - If a change cannot be expressed equivalently in all 5 formats, flag the gap explicitly and propose the closest equivalent or "N/A - not supported".
    - If `instructions/AI.md` needs a new entry (new behavior, new capability, new convention), include that in the proposal too.
 
 4. **Wait for user approval**: do not touch any file until the user explicitly says to proceed.
 
 5. **Execute on approval**: edit only source files in this repo (never agent home dirs directly):
-   - `config/settings.json.tpl` and/or `config/opencode.json.tpl` and/or `config/codex.toml.tpl`
+   - `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, and/or `config/cursor-mcp.json`
    - `extensions/commands/<name>.md` (create or edit)
    - `instructions/AI.md` (if needed)
    - Then run `bash setup.sh` to distribute everything.
@@ -58,7 +65,7 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
 
 ## Rules
 
-- Never edit agent home directories directly (`~/.claude/settings.json`, `~/.config/opencode/opencode.json`, `~/.codex/config.toml`, etc.). Always edit source templates in `config/` and run `setup.sh`.
+- Never edit agent home directories directly (`~/.claude/settings.json`, `~/.config/opencode/opencode.json`, `~/.codex/config.toml`, `~/.cursor/mcp.json`, etc.). Always edit source files in `config/` and run `setup.sh`.
 - `instructions/AI.md` is the canonical file. `CLAUDE.md`, `OPENCODE.md`, `GEMINI.md`, `AGENTS.md` in the `instructions/` dir are all symlinks to it - edit only `AI.md`.
 - Always check whether `instructions/AI.md` needs updating: any new behavior, capability, or convention belongs there.
 - Cross-agent slash commands live in `extensions/commands/<name>.md`. `setup.sh` distributes them automatically - no manual copy needed.
