@@ -84,10 +84,17 @@ Every revived lib ships **`deps.edn` + `build.clj` + `tests.edn`**, with `projec
 demoted to a `lein-tools-deps` shim. Golden references in `~/projects`: `jose-clj` /
 `openai-clj` (plain), any Java lib (`inet.data`, `clj-xchart`) for the `javac` variant.
 
-1. **`deps.edn`** - `:paths ["src" "resources"]`; `:deps` = the old `:dependencies`;
-   `:aliases`:
+1. **`deps.edn`** - `:paths ["src" "resources"]` (use the lib's real source root - some
+   use `src/clojure` or `src/clj`, with Java under `src/java`); `:deps` = the old
+   `:dependencies`; `:aliases`:
    - `:test` - `:extra-paths ["test"]`, `lambdaisland/kaocha` + `org.slf4j/slf4j-nop`
-     + any test-only deps, `:main-opts ["-m" "kaocha.runner"]`.
+     + any test-only deps, `:main-opts ["-m" "kaocha.runner"]`. **Carry over deps lein
+     supplied implicitly**: test-scoped deps from the `:dev`/`:test` profile
+     (e.g. `org.clojure/test.check`), `:provided` deps the tests exercise, and add
+     `"dev-resources"` to `:extra-paths` if the lib uses lein's dev-resources
+     convention, and `"target/classes"` for a Java lib (compiled classes live there).
+     Missing any of these = `clojure -M:test` throws `FileNotFoundException` / `Cannot
+     open <nil>` or reports "No tests found".
    - `:1.11` / `:1.12` - `{:override-deps {org.clojure/clojure {:mvn/version "..."}}}`
      for the CI matrix (`clojure -M:1.11:test`). Keep a `:1.10` too if the lib still
      supports it.
@@ -106,6 +113,8 @@ demoted to a `lein-tools-deps` shim. Golden references in `~/projects`: `jose-cl
 3. **`tests.edn`** - `#kaocha/v1`. Replace lein `:test-selectors` with kaocha meta:
    an integration-gated suite becomes `{:tests [{:id :unit :skip-meta [:integration]}]}`
    so `clojure -M:test` runs unit-only and `^:integration` tests run on demand.
+   If the lib names test namespaces `foo.test.*` instead of `*-test`, kaocha's default
+   pattern finds nothing - add `:ns-patterns ["^foo\\.test\\."]`.
 4. **`project.clj` shim (lein-as-a-bonus)** - deps resolve from `deps.edn`, zero drift:
    ```clojure
    (defproject net.clojars.<u>/<lib> "<version>"
@@ -117,7 +126,10 @@ demoted to a `lein-tools-deps` shim. Golden references in `~/projects`: `jose-cl
    must ALSO keep `:test-selectors {:default (complement :integration) :integration
    :integration :all (constantly true)}` - otherwise `lein test` runs the integration
    suite (network/DB) and errors, since kaocha's `tests.edn` skip-meta only governs
-   `clojure -M:test`.
+   `clojure -M:test`. If the tests need test-scoped deps (`test.check`) or the
+   compiled-Java classpath, also add `:aliases [:test]` to `:lein-tools-deps/config` -
+   otherwise lein-tools-deps pulls only the top-level `:deps` and `lein test` throws
+   `FileNotFoundException`.
    **Exception - Leiningen plugins** (e.g. `lein-shell`): a plugin's runtime *is*
    Leiningen (`:eval-in-leiningen true`), so it **stays lein-first** - `project.clj`
    remains the real build; a `deps.edn` there would only serve REPL/test, not publish.
@@ -139,6 +151,8 @@ Three clojure-native workflows (golden copies in `~/projects/openai-clj/.github/
     - uses: actions/cache@v4          # ~/.m2/repository keyed on deps.edn
     - run: clojure -M:${{ matrix.clojure }}:test
   ```
+  For a **Java lib**, add `- run: clojure -T:build compile-java` before the test step
+  (both here and in `release.yml`) - the classes must exist before `clojure -M:test`.
 - **`release.yml`** - on tag `v*`: verify the tag matches `build.clj` version, run
   `clojure -M:test`, then `clojure -T:build deploy` (Clojars creds from secrets), then a
   GitHub Release.
