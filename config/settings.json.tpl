@@ -13,6 +13,8 @@
     "type": "command",
     "command": "bash @@CLAUDE_DIR@@/statusline-command.sh"
   },
+  "terminalProgressBarEnabled": true,
+  "preferredNotifChannel": "ghostty",
   "hooks": {
     "Stop": [
       {

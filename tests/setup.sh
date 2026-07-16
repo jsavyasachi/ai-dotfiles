@@ -43,6 +43,15 @@ run_setup() {
   HOME="$home_dir" XDG_CONFIG_HOME="$home_dir/.config" PATH="$BASE_PATH" "$BASH_BIN" "$REPO_ROOT/setup.sh"
 }
 
+ghostty_config_path() {
+  local home_dir="$1"
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    printf '%s' "$home_dir/Library/Application Support/com.mitchellh.ghostty/config.ghostty"
+  else
+    printf '%s' "$home_dir/.config/ghostty/config.ghostty"
+  fi
+}
+
 test_fresh_install() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-fresh.XXXXXX)"
@@ -57,6 +66,8 @@ test_fresh_install() {
   [[ ! -e "$home_dir/.agents/skills" ]] || fail "legacy ~/.agents/skills should not be created"
 
   assert_file_contains "$home_dir/.claude/settings.json" '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"'
+  assert_file_contains "$home_dir/.claude/settings.json" '"terminalProgressBarEnabled": true'
+  assert_file_contains "$home_dir/.claude/settings.json" '"preferredNotifChannel": "ghostty"'
   assert_file_contains "$home_dir/.claude/settings.json" '"Stop"'
   assert_file_contains "$home_dir/.claude/settings.json" "bash $home_dir/.claude/dirty-tree-check.sh"
   assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
@@ -65,6 +76,11 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.codex/config.toml" 'hooks = true'
   assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
   assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
+  assert_file_contains "$home_dir/.tmux.conf" '# >>> ai-dotfiles managed: tmux AI transport'
+  assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
+  assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
+  assert_file_contains "$(ghostty_config_path "$home_dir")" 'progress-style = true'
+  assert_file_contains "$(ghostty_config_path "$home_dir")" 'desktop-notifications = true'
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "fresh install summary mismatch"
 }
 
@@ -100,6 +116,27 @@ EOF
   assert_file_contains "$home_dir/.codex/config.toml" 'trust_level = "trusted"'
   assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: codex config$' "$home_dir/.codex/config.toml")" "1" "managed codex block duplicated after merge"
+}
+
+test_terminal_merges_preserve_local_state() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-terminal-merge.XXXXXX)"
+  local ghostty_config
+  ghostty_config="$(ghostty_config_path "$home_dir")"
+
+  mkdir -p "$(dirname "$ghostty_config")"
+  printf '%s\n' 'font-family = Existing Mono' > "$ghostty_config"
+  printf '%s\n' 'set -g prefix C-a' > "$home_dir/.tmux.conf"
+
+  run_setup "$home_dir" >/dev/null
+  run_setup "$home_dir" >/dev/null
+
+  assert_file_contains "$ghostty_config" 'font-family = Existing Mono'
+  assert_file_contains "$ghostty_config" 'progress-style = true'
+  assert_eq "$(grep -c '^# >>> ai-dotfiles managed: ghostty AI sessions$' "$ghostty_config")" "1" "managed Ghostty block duplicated"
+  assert_file_contains "$home_dir/.tmux.conf" 'set -g prefix C-a'
+  assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
+  assert_eq "$(grep -c '^# >>> ai-dotfiles managed: tmux AI transport$' "$home_dir/.tmux.conf")" "1" "managed tmux block duplicated"
 }
 
 test_cross_agent_commands() {
@@ -197,6 +234,7 @@ main() {
   test_fresh_install
   test_idempotent_rerun
   test_codex_merge_preserves_local_state
+  test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check
   test_codex_orchestration_skill

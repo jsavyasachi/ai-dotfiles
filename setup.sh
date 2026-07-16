@@ -145,6 +145,7 @@ fi
 
 # ── OS detection ──────────────────────────────────────────────────────────────
 
+OS_NAME="$(uname -s)"
 
 # ── agents ────────────────────────────────────────────────────────────────────
 
@@ -445,6 +446,29 @@ sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.jso
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
 merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config" "@@DOTFILES_DIR@@" "$DOTFILES_DIR"
 cp "$DOTFILES_DIR/config/cursor-mcp.json" "$CURSOR_DIR/mcp.json"
+
+# ── Terminal configuration ───────────────────────────────────────────────────
+
+# Keep user-owned terminal settings and replace only our labeled blocks.
+if [[ "$OS_NAME" == "Darwin" ]]; then
+  GHOSTTY_CONFIG_DIR="$HOME/Library/Application Support/com.mitchellh.ghostty"
+else
+  GHOSTTY_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty"
+fi
+
+if [[ -f "$GHOSTTY_CONFIG_DIR/config.ghostty" ]]; then
+  GHOSTTY_CONFIG="$GHOSTTY_CONFIG_DIR/config.ghostty"
+elif [[ -f "$GHOSTTY_CONFIG_DIR/config" ]]; then
+  GHOSTTY_CONFIG="$GHOSTTY_CONFIG_DIR/config"
+else
+  GHOSTTY_CONFIG="$GHOSTTY_CONFIG_DIR/config.ghostty"
+fi
+
+merge_managed_block "$DOTFILES_DIR/config/ghostty.conf.tpl" "$GHOSTTY_CONFIG" "ghostty AI sessions"
+if [[ "$OS_NAME" == "Darwin" ]]; then
+  merge_managed_block "$DOTFILES_DIR/config/ghostty-macos.conf.tpl" "$GHOSTTY_CONFIG" "ghostty macOS"
+fi
+merge_managed_block "$DOTFILES_DIR/config/tmux.conf.tpl" "$HOME/.tmux.conf" "tmux AI transport"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 
