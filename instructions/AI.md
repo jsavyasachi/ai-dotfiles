@@ -176,6 +176,7 @@ Minimum check:
 - 2026-05-31: SKILL.md/command `description:` must be single-quoted; enforced by `extensions/hooks/validate-skill-frontmatter.sh` via a git pre-commit hook (cross-agent: fires for any agent that commits) + a `setup.sh` self-check and re-quoting generator. Codex's strict YAML rejects unquoted `: `/` #`; Claude's lenient parser hides it
 - 2026-07-08: clarifying-question policy is agent-conditional - Claude Code uses `AskUserQuestion`, Gemini CLI uses `ask_user`, OpenCode uses `question`, Codex's `request_user_input` is Plan-Mode-only, Cursor has no confirmed structured tool so it asks in plain text with enumerated options
 - 2026-07-11: Gemini CLI hooks are documented and stable enough to configure through `settings.json`; the earlier v0.26+ deferral is resolved, though this repo does not yet install Gemini hooks
+- 2026-07-16: Ghostty and tmux settings are tracked as repo templates and merged by `setup.sh` into labeled managed blocks, preserving user-owned settings outside those blocks
 
 ## Cross-agent config
 
@@ -207,6 +208,16 @@ This is enforced mechanically, not by convention:
 - **`setup.sh` self-check** - validates all sources before distributing and aborts on failure; the command->skill generator re-quotes every `description` per target (YAML single-quote for Codex/OpenCode, TOML basic string for Gemini) so it can never emit a broken file.
 
 When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
+
+## Terminal integration
+
+Ghostty and tmux are shared transport for terminal-based agents:
+
+- Canonical common Ghostty settings live in `config/ghostty.conf.tpl`; macOS-only settings live in `config/ghostty-macos.conf.tpl`.
+- Canonical tmux transport settings live in `config/tmux.conf.tpl`.
+- `setup.sh` merges each template into a labeled managed block. Never replace the surrounding user-owned terminal config.
+- Claude Code explicitly enables `terminalProgressBarEnabled` and selects the `ghostty` notification channel in `config/settings.json.tpl`.
+- Do not set Ghostty's global `title`: a fixed value blocks dynamic AI session names and application titles.
 
 ## Parallel sessions / worktrees
 
