@@ -54,7 +54,7 @@ Idempotent: safe to re-run after pulling updates.
 
 **Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex uses the native TUI status-line config in `config/codex.toml.tpl`.
 
-**Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. tmux passes those escape sequences through and preserves modified keys such as Shift+Enter. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
+**Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, 100k scrollback, safer close behavior, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. tmux passes those escape sequences through, preserves truecolor and modified keys such as Shift+Enter, and enables clipboard integration, mouse support, low-latency escape handling, and 100k history. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
 
 **Session continuity**: downstream repos use untracked `.ai/journal.md` for handoff/catchup state and tracked `AI.md` decisions for durable project policy.
 

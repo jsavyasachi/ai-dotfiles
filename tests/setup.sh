@@ -80,9 +80,12 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_file_contains "$home_dir/.tmux.conf" '# >>> ai-dotfiles managed: tmux AI transport'
   assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
+  assert_file_contains "$home_dir/.tmux.conf" 'set -ga terminal-overrides ",tmux-256color:Tc"'
   assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'progress-style = true'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'desktop-notifications = true'
+  assert_file_contains "$(ghostty_config_path "$home_dir")" 'scrollback-limit = 100000'
+  assert_file_contains "$(ghostty_config_path "$home_dir")" 'confirm-close-surface = true'
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "fresh install summary mismatch"
 }
 
@@ -149,6 +152,7 @@ test_terminal_merges_preserve_local_state() {
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: ghostty AI sessions$' "$ghostty_config")" "1" "managed Ghostty block duplicated"
   assert_file_contains "$home_dir/.tmux.conf" 'set -g prefix C-a'
   assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
+  assert_file_contains "$home_dir/.tmux.conf" 'set -ga terminal-overrides ",tmux-256color:Tc"'
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: tmux AI transport$' "$home_dir/.tmux.conf")" "1" "managed tmux block duplicated"
 }
 
