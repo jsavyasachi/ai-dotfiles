@@ -12,6 +12,7 @@ Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, G
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
 <a href="https://ghostty.org"><img src="https://img.shields.io/badge/Ghostty-3551F3?style=flat&logo=ghostty&logoColor=white" alt="Ghostty" /></a>
 <a href="https://github.com/tmux/tmux"><img src="https://img.shields.io/badge/tmux-1BB91F?style=flat&logo=tmux&logoColor=white" alt="tmux" /></a>
+<a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white" alt="Ollama" /></a>
 
 ## Setup
 
@@ -45,7 +46,9 @@ Idempotent: safe to re-run after pulling updates.
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
 
-**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path. The `codex` skill delegates scoped work through isolated worktrees, resumable JSONL sessions, independent verification, and bounded review; parallel writers require separate worktrees and non-overlapping file claims.
+**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path. The `codex` skill delegates scoped work through isolated worktrees, resumable JSONL sessions, independent verification, and bounded review; the `opencode` skill delegates smaller scoped tasks to the local Ollama model with JSON event monitoring, mandatory diff verification, and one bounded repair loop. Parallel writers require separate worktrees and non-overlapping file claims.
+
+**Local-model stack**: setup installs Ollama when available, starts its service, and pulls models listed in `config/local-models.txt` idempotently. OpenCode defaults to `ollama/qwen2.5-coder:14b`.
 
 **Hooks and guardrails**: Claude Code and Codex get a soft dirty-tree Stop hook. Claude Code also gets a PreToolUse reminder before edits to agent config surfaces. Git gets a repo-local pre-commit hook that validates command and skill frontmatter for every agent.
 
@@ -65,6 +68,7 @@ Idempotent: safe to re-run after pulling updates.
 | Hooks (Codex) | `config/codex.toml.tpl` `[hooks]` block | Merged into `~/.codex/config.toml` inside an `ai-dotfiles managed` block (preserves your other Codex config). |
 | Memory (Claude Code) | `extensions/memory/MEMORY.md` and `extensions/memory/<topic>.md` | Symlinked into `~/.claude/projects/<encoded-projects-path>/memory/`. |
 | Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/`, `~/.codex/skills/`, and `~/.gemini/skills/`. Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
+| Local Ollama models | `config/local-models.txt` | `setup.sh` installs Ollama if missing (macOS/brew), starts the service, and pulls each listed model idempotently. |
 | Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths, merges Codex config into an `ai-dotfiles managed` block, and copies Cursor MCP config. Gemini commands and skills are generated or linked from `extensions/`; this repo has no Gemini settings template. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
 | Ghostty settings | `config/ghostty.conf.tpl`, `config/ghostty-macos.conf.tpl` | Merged into the active Ghostty config as labeled managed blocks; existing settings remain untouched outside those blocks. |
 | tmux AI transport | `config/tmux.conf.tpl` | Merged into `~/.tmux.conf` as a labeled block so progress, notifications, and modified keys reach Ghostty. |
