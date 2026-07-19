@@ -17,6 +17,7 @@ REMOVED=()
 BACKED_UP=()
 SKIPPED=()
 INSTALLED_PLUGINS=()
+PULLED=()
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -491,6 +492,82 @@ if [[ -f "$PLUGINS_FILE" ]] && command -v claude &>/dev/null; then
   done < "$PLUGINS_FILE"
 fi
 
+# ── Local models (Ollama) ─────────────────────────────────────────────────────
+
+OLLAMA_CTX=16384
+LOCAL_MODELS_FILE="$DOTFILES_DIR/config/local-models.txt"
+OLLAMA_AVAILABLE=false
+
+if ! command -v ollama &>/dev/null; then
+  if [[ "$OS_NAME" == "Darwin" ]] && command -v brew &>/dev/null; then
+    if brew install ollama; then
+      command -v ollama &>/dev/null && OLLAMA_AVAILABLE=true
+    else
+      warn "Ollama install failed; models skipped"
+    fi
+  else
+    warn "Ollama unavailable; install it from https://ollama.com/download"
+  fi
+else
+  OLLAMA_AVAILABLE=true
+fi
+
+if [[ "$OLLAMA_AVAILABLE" != true ]]; then
+  SKIPPED+=("Ollama local models (Ollama unavailable)")
+fi
+
+if [[ "$OLLAMA_AVAILABLE" == true ]]; then
+  if [[ "$OS_NAME" == "Darwin" ]]; then
+    current_ollama_ctx="$(launchctl getenv OLLAMA_CONTEXT_LENGTH 2>/dev/null || true)"
+    if [[ "$current_ollama_ctx" != "$OLLAMA_CTX" ]]; then
+      if launchctl setenv OLLAMA_CONTEXT_LENGTH "$OLLAMA_CTX"; then
+        warn "Set Ollama context length to $OLLAMA_CTX; restart the running server to apply it"
+      else
+        warn "Could not set Ollama context length to $OLLAMA_CTX"
+      fi
+    fi
+  fi
+
+  ollama_server_available=false
+  if command -v curl &>/dev/null && curl -sf --max-time 2 http://localhost:11434/api/version &>/dev/null; then
+    ollama_server_available=true
+  elif [[ "$OS_NAME" == "Darwin" ]] && command -v brew &>/dev/null; then
+    if brew services start ollama; then
+      sleep 1
+      if curl -sf --max-time 2 http://localhost:11434/api/version &>/dev/null; then
+        ollama_server_available=true
+      fi
+    else
+      warn "Could not start Ollama; model pulls deferred"
+    fi
+  fi
+
+  if [[ "$ollama_server_available" != true ]]; then
+    warn "Ollama server unreachable; model pulls deferred"
+    [[ -f "$LOCAL_MODELS_FILE" ]] && while IFS= read -r model || [[ -n "$model" ]]; do
+      [[ "$model" =~ ^[[:space:]]*# ]] && continue
+      [[ "$model" =~ ^[[:space:]]*$ ]] && continue
+      SKIPPED+=("$model (Ollama server unreachable)")
+    done < "$LOCAL_MODELS_FILE"
+  elif [[ -f "$LOCAL_MODELS_FILE" ]]; then
+    ollama_list="$(ollama list 2>/dev/null || true)"
+    while IFS= read -r model || [[ -n "$model" ]]; do
+      [[ "$model" =~ ^[[:space:]]*# ]] && continue
+      [[ "$model" =~ ^[[:space:]]*$ ]] && continue
+      if grep -qF -- "$model" <<< "$ollama_list"; then
+        SKIPPED+=("$model (model already present)")
+      else
+        info "Pulling $model (this may be multi-GB)"
+        if ollama pull "$model"; then
+          PULLED+=("$model")
+        else
+          warn "Model pull failed: $model"
+        fi
+      fi
+    done < "$LOCAL_MODELS_FILE"
+  fi
+fi
+
 # ── summary ───────────────────────────────────────────────────────────────────
 
 printf '\n\033[1mSummary\033[0m\n'
@@ -503,13 +580,14 @@ for f in "${REMOVED[@]}"; do success "Removed:   $f"; done
 for f in "${BACKED_UP[@]}"; do warn "Backed up: $f  →  $BACKUP_DIR/"; done
 for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done
+for f in "${PULLED[@]}"; do success "Pulled:    $f"; done
 
 if [[ -n "${CURSOR_HINT:-}" ]]; then
   printf '\n\033[1mAction required\033[0m\n'
   warn "$CURSOR_HINT"
 fi
 
-if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${#REMOVED[@]} -eq 0 && ${#INSTALLED_PLUGINS[@]} -eq 0 ]]; then
+if [[ ${#COPIED[@]} -eq 0 && ${#SYMLINKED[@]} -eq 0 && ${#MERGED[@]} -eq 0 && ${#REMOVED[@]} -eq 0 && ${#INSTALLED_PLUGINS[@]} -eq 0 && ${#PULLED[@]} -eq 0 ]]; then
   printf '\nNothing to do - already up to date.\n'
 else
   printf '\nDone. AI agent settings are live.\n'
