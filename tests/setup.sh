@@ -226,6 +226,23 @@ test_codex_orchestration_skill() {
   assert_file_contains "$skill_dir/references/review.md" 'Treat agent narration as a claim'
 }
 
+test_opencode_delegation_skill() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-opencode-skill.XXXXXX)"
+
+  run_setup "$home_dir" >/dev/null
+
+  local skill_dir="$home_dir/.codex/skills/opencode"
+  assert_exists "$skill_dir/SKILL.md"
+  assert_exists "$skill_dir/references/execution.md"
+  assert_exists "$skill_dir/templates/task-prompt.md"
+  assert_file_contains "$skill_dir/SKILL.md" 'smaller task scope'
+  grep -Fq -- '--format json' "$skill_dir/SKILL.md" || fail "expected '--format json' in $skill_dir/SKILL.md"
+  assert_exists "$home_dir/.gemini/skills/opencode/SKILL.md"
+  assert_exists "$home_dir/.gemini/skills/opencode/references/execution.md"
+  assert_exists "$home_dir/.gemini/skills/opencode/templates/task-prompt.md"
+}
+
 test_backup_of_conflicting_files() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-backup.XXXXXX)"
@@ -252,6 +269,7 @@ main() {
   test_cross_agent_commands
   test_dirty_tree_check
   test_codex_orchestration_skill
+  test_opencode_delegation_skill
   test_backup_of_conflicting_files
   printf 'PASS: setup.sh\n'
 }
