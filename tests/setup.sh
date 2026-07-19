@@ -72,6 +72,8 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.claude/settings.json" "bash $home_dir/.claude/dirty-tree-check.sh"
   assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
+  assert_file_contains "$home_dir/.config/opencode/opencode.json" '"model": "ollama/qwen2.5-coder:14b"'
+  assert_file_contains "$home_dir/.config/opencode/opencode.json" '"baseURL": "http://localhost:11434/v1"'
   assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
   assert_file_contains "$home_dir/.codex/config.toml" 'hooks = true'
   assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
@@ -82,6 +84,17 @@ test_fresh_install() {
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'progress-style = true'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'desktop-notifications = true'
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "fresh install summary mismatch"
+}
+
+test_local_models() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-local-models.XXXXXX)"
+
+  local output
+  output="$(run_setup "$home_dir")"
+
+  assert_file_contains <(printf '%s\n' "$output") 'Ollama unavailable; install it from https://ollama.com/download'
+  assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Done. AI agent settings are live.' "local models summary mismatch"
 }
 
 test_idempotent_rerun() {
@@ -232,6 +245,7 @@ test_backup_of_conflicting_files() {
 
 main() {
   test_fresh_install
+  test_local_models
   test_idempotent_rerun
   test_codex_merge_preserves_local_state
   test_terminal_merges_preserve_local_state
