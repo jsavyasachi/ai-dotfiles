@@ -177,6 +177,9 @@ Minimum check:
 - 2026-07-08: clarifying-question policy is agent-conditional - Claude Code uses `AskUserQuestion`, Gemini CLI uses `ask_user`, OpenCode uses `question`, Codex's `request_user_input` is Plan-Mode-only, Cursor has no confirmed structured tool so it asks in plain text with enumerated options
 - 2026-07-11: Gemini CLI hooks are documented and stable enough to configure through `settings.json`; the earlier v0.26+ deferral is resolved, though this repo does not yet install Gemini hooks
 - 2026-07-16: Ghostty and tmux settings are tracked as repo templates and merged by `setup.sh` into labeled managed blocks, preserving user-owned settings outside those blocks
+- 2026-07-19: The local-model stack is Ollama plus `qwen2.5-coder:14b`, chosen for 16 GB Apple-silicon machines; `config/local-models.txt` declares the model, `setup.sh` installs and pulls it idempotently, and `OLLAMA_CONTEXT_LENGTH=16384` is required because the `/v1` endpoint cannot raise context per request
+- 2026-07-19: OpenCode defaults to `ollama/qwen2.5-coder:14b` via `config/opencode.json.tpl`; override per run with `opencode run -m provider/model`
+- 2026-07-19: The `opencode` cross-agent skill mirrors the `codex` delegation skill; its local-model posture is smaller task scope, mandatory diff verification, and one bounded repair loop
 
 ## Cross-agent config
 
