@@ -1,20 +1,32 @@
 ---
-name: clojure-lib-revival
-description: 'Revive, modernize, and publish an abandoned Clojure library to Clojars as deps.edn-native (deps.edn + tools.build the source of truth; Leiningen kept as a bonus via lein-tools-deps). Triggers on "revive this Clojure lib", "modernize this leiningen project", "make this clj lib deps-native", "convert project.clj to deps.edn", "adopt/fork an abandoned Clojure library", "publish this to Clojars", "get this old clj lib building on a modern JDK". Loads the phased process (recon, modernize with TDD, deps-native build emit, CI matrix, self-publish), the per-release polish checklist, the Clojars deploy runbook, and the known gotchas (toArray on JDK11+, Set hashCode, ragel codegen, javac target, sun.misc warnings).'
+name: clojure-libs
+description: 'Adopt, modernize, maintain, release, and publish Clojure libraries on Clojars as deps.edn-native projects (deps.edn + tools.build are the source of truth; Leiningen kept as a bonus via lein-tools-deps). Covers both reviving an abandoned library and the ongoing upkeep of one already published. Triggers on "revive this Clojure lib", "modernize this leiningen project", "make this clj lib deps-native", "convert project.clj to deps.edn", "adopt/fork an abandoned Clojure library", "publish this to Clojars", "cut a release", "bump the SDK", "upgrade a dependency in a wrapper lib", "get this old clj lib building on a modern JDK". Loads the phased adoption process (recon, modernize with TDD, deps-native build emit, CI matrix, self-publish), the ongoing-maintenance rules (dependency bump parity audit, release cadence, idempotent multi-artifact releases), the per-release polish checklist, the Clojars release runbook, and the known gotchas (toArray on JDK11+, Set hashCode, ragel codegen, javac target, sun.misc warnings).'
 allowed-tools: Read Write Edit Bash Glob Grep
 ---
 
-# clojure-lib-revival
+# clojure-libs
 
-A repeatable process for adopting an abandoned Clojure library: prove it builds on
-the current toolchain, modernize it, ship it **deps.edn-native** (`deps.edn` +
-`build.clj`/tools.build the source of truth, Leiningen kept as a bonus via a
-`lein-tools-deps` shim), get CI green, and publish to Clojars. Distilled from
-reviving `hier-set`, `lein-shell`, `beckon` (+ `beckon-ffm`), and `inet.data`.
-Replace `<lib>`, `<you>` (GitHub handle), `<u>` (Clojars username), `<upstream>`.
+The canonical process for Clojure libraries published to Clojars, covering the
+whole lifecycle:
 
-Good candidates: small (<= a few hundred LOC), clean, clearly-owned, last release
-years ago. Most "stale" libs are actually **broken** on modern Java, not merely old.
+- **Adoption** (Phases 0-3): take an abandoned library, prove it builds on the
+  current toolchain, modernize it, ship it **deps.edn-native** (`deps.edn` +
+  `build.clj`/tools.build the source of truth, Leiningen kept as a bonus via a
+  `lein-tools-deps` shim), get CI green, publish.
+- **Ongoing maintenance**: dependency bumps, parity audits, releases, and the
+  standing rules for libraries already published, including originals that were
+  never revived.
+
+Distilled from reviving `hier-set`, `lein-shell`, `beckon` (+ `beckon-ffm`), and
+`inet.data`, and from maintaining the wrapper libraries. Replace `<lib>`, `<you>`
+(GitHub handle), `<u>` (Clojars username), `<upstream>`.
+
+Good adoption candidates: small (<= a few hundred LOC), clean, clearly-owned, last
+release years ago. Most "stale" libs are actually **broken** on modern Java, not
+merely old.
+
+If the library is already yours and already published, skip to
+[Ongoing maintenance](#ongoing-maintenance).
 
 ## Workflow
 
@@ -211,10 +223,10 @@ Versioning: a continuation - **minor** bump over the last release (modern-platfo
 support is a backward-compatible gain). For a library the author started toward
 (e.g. `1.0.0-SNAPSHOT`), ship that target version.
 
-Then run the **per-release polish checklist** below, deploy with
-`clojure -T:build deploy` (or push a `v*` tag to let `release.yml` do it; see
-[references/clojars-publish.md](references/clojars-publish.md)), tag, and verify
-the POM returns 200.
+Then run the **per-release polish checklist** below and release by pushing a `v*`
+tag, which is what `release.yml` triggers on. Do not deploy from a laptop unless CI
+is genuinely unavailable. Verify the artifact on Clojars afterwards: see
+[references/clojars-publish.md](references/clojars-publish.md).
 
 ## Per-release polish checklist
 
@@ -237,6 +249,66 @@ Each of these burned a real release at least once:
   invasive churn that strips author attribution. Leave it.
 - **Companion packages**: if the repo ships more than one artifact, show **all**
   coordinates and add a badge per package.
+
+## Ongoing maintenance
+
+Applies to every published library, including originals that were never revived.
+
+### Dependency bumps are a parity audit, not just a green build
+
+A wrapper library exists to expose its upstream. A bump that only restores green
+tests silently lets the wrapper fall behind. On **every** bump:
+
+1. Bump the dependency and fix whatever breaks.
+2. **Audit the compare range for newly added surface** and implement anything
+   stable the wrapper does not yet expose.
+3. **Skip** beta, preview, experimental, and deprecated surface. Stable/GA only.
+4. Ship the bump and the new features together in **one** release.
+
+- Read the **diff of the compare range**, not just the release-notes prose. Notes
+  name the headline change, not its full shape.
+- **Read the feature description precisely.** A note saying "add `owner_project_access`
+  to `APIKeyListParams`" means the *request params*, a new list filter. It is easy to
+  hit the exception on the *response* model, fix that, and miss the actual feature.
+  Request-side and response-side are separate surfaces.
+- Confirm the real shape with `javap` against the jar on the classpath. Do not guess
+  from names.
+- **Audit before tagging.** Clojars is immutable, so a gap found after the tag costs a
+  second release.
+- If the README carries a "Tracks `<dep>` X.Y.Z" line, update it in the same commit.
+
+### Dependency automation
+
+- **antq, not Renovate or Dependabot** (no Leiningen manager in either). Weekly
+  workflow, `peter-evans/create-pull-request`. See Phase 2b for the mandatory flags.
+- antq PRs land with **no CI** (GitHub anti-recursion: a workflow-created PR does not
+  trigger workflows). Validate locally or re-push the branch.
+- A dep-bump PR that red-tests is a **signal, not a nuisance**: it usually means the
+  upstream changed a contract. Fix the consumer in the same branch as the bump, then
+  land them together. Never merge a bump on its own to "get green".
+
+### Releases
+
+- The **`v*` tag is the release trigger**, not a push to main. `release.yml` verifies
+  the tag matches `build.clj` version, runs tests, deploys, and creates the GitHub
+  Release. Pushing main is always safe.
+- **Clojars is immutable.** Re-deploying a published version returns
+  `403 Non-SNAPSHOT redeploy`. There is no undo, so decide the version deliberately.
+- **A green run is not proof of publication, and a red run is not proof of failure.**
+  Always verify `latest_release` via the Clojars API **and** a jar/pom HTTP 200 on
+  `repo.clojars.org` before calling a release done.
+- **Multi-artifact repos**: guard each deploy step with a Clojars existence check.
+  An unconditional redeploy of an unchanged companion 403s and false-reds the run.
+  Point the guard so a **curl failure falls through to deploying** (attempt and fail
+  loudly if Clojars is truly unreachable) rather than silently skipping. That makes
+  core-only bumps, companion-only bumps, and re-running the same tag all idempotent.
+  Validate the guard with a `workflow_dispatch` run where every artifact skips.
+- **Breaking change means a major bump**, even when the blast radius is one optional
+  namespace. Say so explicitly in the CHANGELOG.
+- Watch for a **hardcoded artifact path** in a `:deploy` alias
+  (`:artifact "target/<lib>-1.2.3.jar"`). It does not track `build.clj` version, so a
+  bump silently deploys the wrong or a missing jar. Build the jar locally and confirm
+  the filename matches before tagging.
 
 ## Separate-artifact pattern (newer-JDK features)
 
@@ -270,13 +342,25 @@ bytecode). Ship it as a **companion artifact** (`<lib>-ffm`) that depends on cor
 - **`sun.misc.*` "internal proprietary API" warnings.** Unavoidable when wrapping
   e.g. `sun.misc.Signal`; silence with `-XDignore.symbol.file` in `b/javac`'s
   `:javac-opts` (build.clj).
+- **`b/write-pom` drops metadata that Leiningen supplied for free.** A deps.edn lib
+  must pass `:description` and `:url` in `:pom-data` and `:connection` in `:scm`, or
+  the Clojars page renders with no description and no homepage. Verify the generated
+  `pom.xml` before deploying, not the Clojars page after.
+- **License must match the repo, not default to the house standard.** Originals are
+  EPL 2.0; a fork **preserves the upstream license** verbatim (several forks are not
+  EPL, and some are EPL 1.0 rather than 2.0). Copy the exact license from the
+  upstream `project.clj`/`LICENSE` into `build.clj` `:pom-data`, and never author or
+  relicense a `LICENSE` file on someone else's behalf.
 - **Dead imports/requires**, **phantom `:deploy-branches`** (points at a `stable`
   branch that may exist but be diverged - reconcile or drop before deploy).
 
 ## Hard rules
 
-- **No AI footprint in the revival forks**: no `CLAUDE.md`/`AI.md`/`.ai/`, no
-  `Co-Authored-By` trailers. Plain Conventional Commits.
+- **No AI footprint in ANY Clojure library**, forks and originals alike: no
+  `CLAUDE.md`/`AI.md`/`AGENTS.md`/`.ai/`, no agent symlinks, no `Co-Authored-By` or
+  other AI trailers. Plain Conventional Commits. These are public artifacts on
+  Clojars, so the global "make new repos AI-native" bootstrap does **not** apply to
+  them.
 - **Commit at every logical stage**; never accumulate uncommitted work across steps.
 - **Outward-facing text** (PRs, issues, READMEs) stays terse and human - lead with
   substance, cut praise and parenthetical asides.

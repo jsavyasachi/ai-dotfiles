@@ -358,6 +358,20 @@ for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   fi
 done
 
+# Prune per-skill symlinks whose source no longer exists (skill renamed or
+# removed). The loop above only ever adds, so without this a rename leaves a
+# broken symlink behind in every native skills dir. Only dangling SYMLINKS are
+# removed, never real directories, so hand-installed skills are left alone.
+for native_skills_dir in "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_SKILLS_DIR"; do
+  [[ -d "$native_skills_dir" ]] || continue
+  for entry in "$native_skills_dir"/*; do
+    if [[ -L "$entry" && ! -e "$entry" ]]; then
+      rm -f "$entry"
+      REMOVED+=("$(basename "$entry") (stale skill symlink in $native_skills_dir)")
+    fi
+  done
+done
+
 # ── Cursor ───────────────────────────────────────────────────────────────────
 #
 # Cursor's per-project AGENTS.md is already covered by the AI Nativity
