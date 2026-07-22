@@ -254,6 +254,47 @@ Each of these burned a real release at least once:
 
 Applies to every published library, including originals that were never revived.
 
+### The parity contract (what a wrapper commits to)
+
+A library that wraps an official SDK commits to **idiomatic parity**, not a curated
+subset: **every non-deprecated operation the SDK exposes gets one idiomatic Clojure
+fn** (kebab maps in, maps out, keyword enums, the library's error contract). Coverage
+is the promise. Decide this ONCE per library and state it in the README; do not make
+it up per endpoint (that ad-hoc drift is what this section exists to prevent).
+
+The boundary, stated precisely so "parity" cannot be over-read:
+
+- **In scope = endpoints/operations.** Each service method that hits an API endpoint
+  gets a fn. Completeness is measured at the operation level.
+- **NOT separate gaps** (do not duplicate these): the async/transport client variant,
+  response-accessor variants (`withRawResponse`), and per-call `RequestOptions`
+  overloads. These are cross-cutting seams, covered ONCE by an idiomatic mechanism
+  (`:configure` on the client builder, an `:include-response`/`opts` third arg, a
+  blocking + Clojure-native concurrency stance). Wrapping every overload is not parity,
+  it is noise.
+- **Deprecated surface is always skipped.** Zero-operation placeholder services wrap
+  nothing (there is nothing to wrap - do not re-investigate them each audit).
+- **Beta/preview surface is IN scope** under idiomatic parity when the SDK ships it and
+  it is not deprecated; wrap it completely and label it beta in docs (upstream may still
+  change it). "Skip beta by default" is the *opinionated-subset* stance and does NOT
+  apply to a library that has committed to idiomatic parity.
+
+**Idiomatic conveniences are allowed, but labeled and additive, never substitutive.**
+A Clojure-native helper the SDK does not have (a native tool-run loop, model-id keyword
+aliases, provider `:base-url` docs) is fine and encouraged - but it must be documented
+as an *extra layered on complete coverage*, and it does NOT excuse skipping the SDK's
+own equivalent. If the SDK has a `ToolRunner`, idiomatic parity means you wrap it too,
+even if you also ship a nicer native loop. A convenience that stands *in place of*
+wrapping real surface is a silent parity gap.
+
+**Audit method: full service-tree op diff, periodically - not only on bumps.** Enumerate
+every `services/blocking/*Service` from the SDK jar, `javap` each for its operation
+methods, and grep the wrapper `src/` for a matching `.op` interop call. A miss on a
+distinctive op (not generic CRUD) is a real gap. Run under bash (zsh will not word-split
+the op list); strip the `com/<org>/` prefix before prefixing the class. This full sweep
+is stronger than the per-bump compare-range diff and catches pre-existing partial-wraps
+the bump diffs never touched.
+
 ### Dependency bumps are a parity audit, not just a green build
 
 A wrapper library exists to expose its upstream. A bump that only restores green
