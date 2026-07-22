@@ -260,9 +260,13 @@ A wrapper library exists to expose its upstream. A bump that only restores green
 tests silently lets the wrapper fall behind. On **every** bump:
 
 1. Bump the dependency and fix whatever breaks.
-2. **Audit the compare range for newly added surface** and implement anything
-   stable the wrapper does not yet expose.
-3. **Skip** beta, preview, experimental, and deprecated surface. Stable/GA only.
+2. **Audit the compare range for newly added surface** and implement anything the
+   wrapper does not yet expose that falls within the library's committed scope.
+3. **Beta/preview surface**: wrap it when the library has already committed to that
+   surface (e.g. anthropic-clj deliberately wraps the beta agents platform), keeping
+   that surface complete; otherwise skip beta by default for a stable-focused wrapper.
+   Mark wrapped beta clearly as beta in docs, since the upstream may still change it.
+   **Deprecated surface is always skipped.**
 4. Ship the bump and the new features together in **one** release.
 
 - Read the **diff of the compare range**, not just the release-notes prose. Notes
