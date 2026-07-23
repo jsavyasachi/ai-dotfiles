@@ -243,9 +243,16 @@ Each of these burned a real release at least once:
   default failure. A prose reminder is not enough - it drifted stale across 14 libs at
   once (2026-07-22 audit) because the check lived only in a human's head. Enforce it
   MECHANICALLY: the release workflow (`release.yml`, tag-triggered) must fail if the
-  README coordinate does not equal the tag/`build.clj` version - e.g. a step that greps
+  README coordinate does not equal the tag/`build.clj` version - a step that greps
   `net.clojars.<u>/<lib> {:mvn/version "<tag>"}` and exits non-zero if absent, so a
-  stale-coord release cannot publish. Audit all libs at once by reconciling each
+  stale-coord release cannot publish. Two footguns learned rolling this out to 25 libs:
+  (1) **whitespace** - multi-artifact READMEs align coords with padding spaces
+  (`psql-clj     {:mvn/version`), so a single-space `grep -F` false-fails; normalize
+  first with `sed 's/  */ /g' README.md | grep -qF ...`. (2) **multi-artifact / lein** -
+  for companions (psql-clj: core + modules/gis + modules/aws) or two artifacts (environ:
+  environ + lein-environ), loop the guard over each `(artifact,dir)`, read that dir's own
+  version, and check its coord (mirror the `deploy_if_new` idempotent loop); lein
+  artifacts check the `[<lib> "<ver>"]` form. Audit all libs at once by reconciling each
   README's pinned version against the Clojars group API's `latest_release`.
 - **Fork attribution** in the license section (preserve the original copyright; add
   a "Maintenance fork (year) by <you>, original: <upstream-url>" line).
