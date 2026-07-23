@@ -177,6 +177,7 @@ Minimum check:
 - 2026-07-08: clarifying-question policy is agent-conditional - Claude Code uses `AskUserQuestion`, Gemini CLI uses `ask_user`, OpenCode uses `question`, Codex's `request_user_input` is Plan-Mode-only, Cursor has no confirmed structured tool so it asks in plain text with enumerated options
 - 2026-07-11: Gemini CLI hooks are documented and stable enough to configure through `settings.json`; the earlier v0.26+ deferral is resolved, though this repo does not yet install Gemini hooks
 - 2026-07-16: Ghostty and tmux settings are tracked as repo templates and merged by `setup.sh` into labeled managed blocks, preserving user-owned settings outside those blocks
+  - **Superseded 2026-07-23** for tmux: only Ghostty is managed now (see 2026-07-23 entry)
 - 2026-07-19: The local-model stack is Ollama plus `qwen2.5-coder:14b`, chosen for 16 GB Apple-silicon machines; `config/local-models.txt` declares the model, `setup.sh` installs and pulls it idempotently, and `OLLAMA_CONTEXT_LENGTH=16384` is required because the `/v1` endpoint cannot raise context per request
 - 2026-07-19: OpenCode defaults to `ollama/qwen2.5-coder:14b` via `config/opencode.json.tpl`; override per run with `opencode run -m provider/model`
 - 2026-07-19: The `opencode` cross-agent skill mirrors the `codex` delegation skill; its local-model posture is smaller task scope, mandatory diff verification, and one bounded repair loop
@@ -185,6 +186,7 @@ Minimum check:
 - 2026-07-21: a dependency bump on a wrapper library is a **parity audit**, not just a green build: bump, audit the compare range for newly added surface, implement anything within the library's committed scope, and ship bump + features in one release. Audit **before** tagging, since Clojars is immutable. Beta/preview surface: wrap it when the library has already committed to that surface (e.g. anthropic-clj's beta agents platform), keeping it complete and marking it beta in docs; otherwise skip beta by default for a stable-focused wrapper. Deprecated surface is always skipped
 - 2026-07-21: the split between the `clojure-libs` skill and the private memory dir is **process vs state**. Durable, non-sensitive process goes in the skill (public repo, all agents). Mutable or private state stays in the gitignored `extensions/memory/` (lib registry, roadmaps, credentials pointers, per-lib reference facts) because `ai-dotfiles` is a PUBLIC repo
 - 2026-07-21: `setup.sh` now prunes dangling per-skill symlinks from the OpenCode/Codex/Gemini native skill dirs. The distribution loop only ever added, so renaming or removing a skill previously left a broken symlink in all three
+- 2026-07-23: tmux transport is **no longer managed** by this repo. Removed `config/tmux.conf.tpl`, the `merge_managed_block ... "tmux AI transport"` call in `setup.sh`, its tests, and its docs/badge. Ghostty is now the sole managed terminal transport. Rationale: the settings were redundant with Ghostty's own capabilities for local use, and a managed tmux block has no per-agent format divergence to justify repo ownership. Users who still run tmux own their `~/.tmux.conf` directly. `setup.sh` has no un-merge, so the previously injected managed block must be stripped from live configs by hand (done for this machine)
 
 ## Cross-agent config
 
@@ -219,13 +221,13 @@ When planning any change to AI agent settings, configuration, hooks, slash comma
 
 ## Terminal integration
 
-Ghostty and tmux are shared transport for terminal-based agents:
+Ghostty is the shared transport for terminal-based agents:
 
 - Canonical common Ghostty settings live in `config/ghostty.conf.tpl`; macOS-only settings live in `config/ghostty-macos.conf.tpl`.
-- Canonical tmux transport settings live in `config/tmux.conf.tpl`.
 - `setup.sh` merges each template into a labeled managed block. Never replace the surrounding user-owned terminal config.
 - Claude Code explicitly enables `terminalProgressBarEnabled` and selects the `ghostty` notification channel in `config/settings.json.tpl`.
 - Do not set Ghostty's global `title`: a fixed value blocks dynamic AI session names and application titles.
+- tmux transport is intentionally not managed by this repo (removed 2026-07-23). If a downstream workflow needs tmux, own the config yourself outside `ai-dotfiles`.
 
 ## Parallel sessions / worktrees
 

@@ -78,9 +78,7 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.codex/config.toml" 'hooks = true'
   assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
   assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
-  assert_file_contains "$home_dir/.tmux.conf" '# >>> ai-dotfiles managed: tmux AI transport'
-  assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
-  assert_file_contains "$home_dir/.tmux.conf" 'set -ga terminal-overrides ",tmux-256color:Tc"'
+  [[ ! -e "$home_dir/.tmux.conf" ]] || fail "setup should not create ~/.tmux.conf (tmux transport removed)"
   assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'progress-style = true'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'desktop-notifications = true'
@@ -142,7 +140,6 @@ test_terminal_merges_preserve_local_state() {
 
   mkdir -p "$(dirname "$ghostty_config")"
   printf '%s\n' 'font-family = Existing Mono' > "$ghostty_config"
-  printf '%s\n' 'set -g prefix C-a' > "$home_dir/.tmux.conf"
 
   run_setup "$home_dir" >/dev/null
   run_setup "$home_dir" >/dev/null
@@ -150,10 +147,6 @@ test_terminal_merges_preserve_local_state() {
   assert_file_contains "$ghostty_config" 'font-family = Existing Mono'
   assert_file_contains "$ghostty_config" 'progress-style = true'
   assert_eq "$(grep -c '^# >>> ai-dotfiles managed: ghostty AI sessions$' "$ghostty_config")" "1" "managed Ghostty block duplicated"
-  assert_file_contains "$home_dir/.tmux.conf" 'set -g prefix C-a'
-  assert_file_contains "$home_dir/.tmux.conf" 'set -g allow-passthrough on'
-  assert_file_contains "$home_dir/.tmux.conf" 'set -ga terminal-overrides ",tmux-256color:Tc"'
-  assert_eq "$(grep -c '^# >>> ai-dotfiles managed: tmux AI transport$' "$home_dir/.tmux.conf")" "1" "managed tmux block duplicated"
 }
 
 test_cross_agent_commands() {

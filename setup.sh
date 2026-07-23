@@ -483,7 +483,6 @@ merge_managed_block "$DOTFILES_DIR/config/ghostty.conf.tpl" "$GHOSTTY_CONFIG" "g
 if [[ "$OS_NAME" == "Darwin" ]]; then
   merge_managed_block "$DOTFILES_DIR/config/ghostty-macos.conf.tpl" "$GHOSTTY_CONFIG" "ghostty macOS"
 fi
-merge_managed_block "$DOTFILES_DIR/config/tmux.conf.tpl" "$HOME/.tmux.conf" "tmux AI transport"
 
 # ── plugins ───────────────────────────────────────────────────────────────────
 

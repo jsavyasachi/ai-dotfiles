@@ -11,7 +11,6 @@ Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, G
 <a href="https://cursor.com"><img src="https://img.shields.io/badge/Cursor-000000?style=flat&logo=cursor&logoColor=white" alt="Cursor" /></a>
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
 <a href="https://ghostty.org"><img src="https://img.shields.io/badge/Ghostty-3551F3?style=flat&logo=ghostty&logoColor=white" alt="Ghostty" /></a>
-<a href="https://github.com/tmux/tmux"><img src="https://img.shields.io/badge/tmux-1BB91F?style=flat&logo=tmux&logoColor=white" alt="tmux" /></a>
 <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white" alt="Ollama" /></a>
 
 ## Setup
@@ -54,7 +53,7 @@ Idempotent: safe to re-run after pulling updates.
 
 **Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex uses the native TUI status-line config in `config/codex.toml.tpl`.
 
-**Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, 100k scrollback, safer close behavior, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. tmux passes those escape sequences through, preserves truecolor and modified keys such as Shift+Enter, and enables clipboard integration, mouse support, low-latency escape handling, and 100k history. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
+**Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, 100k scrollback, safer close behavior, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
 
 **Session continuity**: downstream repos use untracked `.ai/journal.md` for handoff/catchup state and tracked `AI.md` decisions for durable project policy.
 
@@ -71,7 +70,6 @@ Idempotent: safe to re-run after pulling updates.
 | Local Ollama models | `config/local-models.txt` | `setup.sh` installs Ollama if missing (macOS/brew), starts the service, and pulls each listed model idempotently. |
 | Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths, merges Codex config into an `ai-dotfiles managed` block, and copies Cursor MCP config. Gemini commands and skills are generated or linked from `extensions/`; this repo has no Gemini settings template. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
 | Ghostty settings | `config/ghostty.conf.tpl`, `config/ghostty-macos.conf.tpl` | Merged into the active Ghostty config as labeled managed blocks; existing settings remain untouched outside those blocks. |
-| tmux AI transport | `config/tmux.conf.tpl` | Merged into `~/.tmux.conf` as a labeled block so progress, notifications, and modified keys reach Ghostty. |
 | Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
 | Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |
 | Stop-hook dirty-tree behavior | `scripts/dirty-tree-check.sh` | Symlinked to `~/.claude/`; Codex references it via absolute path in the merged config block. |
