@@ -238,6 +238,15 @@ Each of these burned a real release at least once:
   `net.clojars.<u>/<lib> {:mvn/version "x"}` (primary) and Leiningen
   `[net.clojars.<u>/<lib> "x"]` (the shim keeps this working). The deps.edn form uses
   different syntax - a blind find/replace on the lein form misses it.
+  **This is the #1 silently-drifting item**: bumping `build.clj`/`project.clj` version
+  without also bumping BOTH README coordinate blocks in the SAME release commit is the
+  default failure. A prose reminder is not enough - it drifted stale across 14 libs at
+  once (2026-07-22 audit) because the check lived only in a human's head. Enforce it
+  MECHANICALLY: the release workflow (`release.yml`, tag-triggered) must fail if the
+  README coordinate does not equal the tag/`build.clj` version - e.g. a step that greps
+  `net.clojars.<u>/<lib> {:mvn/version "<tag>"}` and exits non-zero if absent, so a
+  stale-coord release cannot publish. Audit all libs at once by reconciling each
+  README's pinned version against the Clojars group API's `latest_release`.
 - **Fork attribution** in the license section (preserve the original copyright; add
   a "Maintenance fork (year) by <you>, original: <upstream-url>" line).
 - **Run the README example** - upstream examples are often broken (unbalanced parens,
