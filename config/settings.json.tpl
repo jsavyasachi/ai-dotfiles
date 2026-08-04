@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "auto",
     "allow": [
       "WebFetch(domain:docs.anthropic.com)",
       "WebFetch(domain:code.claude.com)",
@@ -8,6 +9,15 @@
       "WebFetch(domain:geminicli.com)",
       "WebFetch(domain:github.com)"
     ]
+  },
+  "skillOverrides": {
+    "tdd": "off",
+    "readme-badges": "off",
+    "devserver": "off",
+    "file-docs": "off",
+    "mermaid": "off",
+    "opencode": "off",
+    "use-railway": "off"
   },
   "statusLine": {
     "type": "command",
@@ -41,7 +51,6 @@
     ]
   },
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }
