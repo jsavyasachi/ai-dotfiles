@@ -1,5 +1,5 @@
 ---
-description: Re-orient on this repo by replaying the last N session-handoff entries plus durable AI.md decisions
+description: 'Re-orient on this repo by replaying the last N session-handoff entries plus the durable decision log'
 ---
 
 You are catching the user up on a repo they (or a different agent) worked on previously. Goal: a tight briefing that ends with the user knowing where to pick up.
@@ -18,10 +18,12 @@ The user may pass an argument after `/catchup` - interpret it as how many recent
    > No journal in this repo. Run `/handoff` at the end of a session to start one.
    Then stop. Do not fabricate a recap.
 
-2. **Resolve the durable instructions file**, then read its `## Decisions` section if present:
+2. **Resolve the durable instructions file, then read the decision log:**
    - Prefer `AI.md` at the repo root.
    - If root `AI.md` is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This is the `ai-dotfiles` repo layout.
    - If neither exists, continue without durable decisions.
+
+   The log is a `DECISIONS.md` sitting in the same directory as that instructions file if one exists (this repo: `instructions/DECISIONS.md`); otherwise it is the `## Decisions` section inside the instructions file. Read whichever applies.
 
    Durable decisions supersede stale Open/Next items in the journal.
 
@@ -32,7 +34,7 @@ The user may pass an argument after `/catchup` - interpret it as how many recent
    - Renaming evident (journal says `/foo`, repo has `/bar` doing the same job) → flag as stale.
 
    Tag each item:
-   - `[resolved]` - artifact exists / commit landed / question answered by `## Decisions`
+   - `[resolved]` - artifact exists / commit landed / question answered by the decision log
    - `[stale: <reason>]` - renamed, superseded, or no longer matches reality
    - `[still open]` - matches reality, unresolved
 
@@ -43,7 +45,7 @@ The user may pass an argument after `/catchup` - interpret it as how many recent
    - Merge bullets across entries - collapse duplicates.
    - Surface `[still open]` and `[stale]` items. Stale items are useful because they show drift the user may not know about.
    - Highlight the most recent **Next** that is still open - that's the resume point.
-   - If `## Decisions` in AI.md contains anything from the journal window, mention it as "(durable)".
+   - If the decision log contains anything from the journal window, mention it as "(durable)".
 
 5. **Format** as four short sections, in this order (skip any that are empty):
 

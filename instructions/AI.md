@@ -167,26 +167,9 @@ Minimum check:
 
 ## Decisions
 
-- 2026-05-04: commit/push cadence uses hybrid architecture: prose policy in `AI.md` + `/commit` and `/push` slash commands + soft Stop hook (dirty-tree nag on session end)
-- 2026-05-04: "logical stage" = a TodoWrite task reaching `completed` - one task, one Conventional Commit; don't accumulate uncommitted work across tasks
-- 2026-05-04: `/push` = `git push` current branch as-is; no PR auto-creation, no main-branch gating; relies on existing docs-audit rule
-- 2026-05-04: OpenCode gets policy + commands but no Stop hook in v1 - hook system is plugin-based (`hooks.yaml`), deferred
-- 2026-05-04: Gemini Stop hook deferred if v0.26+ syntax is unstable; policy + commands land regardless
-- 2026-05-04: cross-agent commit cadence commands are `/commit` and `/push`; no legacy aliases
-- 2026-05-31: SKILL.md/command `description:` must be single-quoted; enforced by `extensions/hooks/validate-skill-frontmatter.sh` via a git pre-commit hook (cross-agent: fires for any agent that commits) + a `setup.sh` self-check and re-quoting generator. Codex's strict YAML rejects unquoted `: `/` #`; Claude's lenient parser hides it
-- 2026-07-08: clarifying-question policy is agent-conditional - Claude Code uses `AskUserQuestion`, Gemini CLI uses `ask_user`, OpenCode uses `question`, Codex's `request_user_input` is Plan-Mode-only, Cursor has no confirmed structured tool so it asks in plain text with enumerated options
-- 2026-07-11: Gemini CLI hooks are documented and stable enough to configure through `settings.json`; the earlier v0.26+ deferral is resolved, though this repo does not yet install Gemini hooks
-- 2026-07-16: Ghostty and tmux settings are tracked as repo templates and merged by `setup.sh` into labeled managed blocks, preserving user-owned settings outside those blocks
-  - **Superseded 2026-07-23** for tmux: only Ghostty is managed now (see 2026-07-23 entry)
-- 2026-07-19: The local-model stack is Ollama plus `qwen2.5-coder:14b`, chosen for 16 GB Apple-silicon machines; `config/local-models.txt` declares the model, `setup.sh` installs and pulls it idempotently, and `OLLAMA_CONTEXT_LENGTH=16384` is required because the `/v1` endpoint cannot raise context per request
-- 2026-07-19: OpenCode defaults to `ollama/qwen2.5-coder:14b` via `config/opencode.json.tpl`; override per run with `opencode run -m provider/model`
-- 2026-07-19: The `opencode` cross-agent skill mirrors the `codex` delegation skill; its local-model posture is smaller task scope, mandatory diff verification, and one bounded repair loop
-
-- 2026-07-21: the `clojure-lib-revival` skill is renamed **`clojure-libs`** and broadened from "revive an abandoned lib" to the whole library lifecycle, adding an "Ongoing maintenance" section (dependency bump parity audits, dependency automation, release rules). It is the **canonical home for durable Clojure library process knowledge**, so all five agents share it rather than it living in Claude-only memory
-- 2026-07-21: a dependency bump on a wrapper library is a **parity audit**, not just a green build: bump, audit the compare range for newly added surface, implement anything within the library's committed scope, and ship bump + features in one release. Audit **before** tagging, since Clojars is immutable. Beta/preview surface: wrap it when the library has already committed to that surface (e.g. anthropic-clj's beta agents platform), keeping it complete and marking it beta in docs; otherwise skip beta by default for a stable-focused wrapper. Deprecated surface is always skipped
-- 2026-07-21: the split between the `clojure-libs` skill and the private memory dir is **process vs state**. Durable, non-sensitive process goes in the skill (public repo, all agents). Mutable or private state stays in the gitignored `extensions/memory/` (lib registry, roadmaps, credentials pointers, per-lib reference facts) because `ai-dotfiles` is a PUBLIC repo
-- 2026-07-21: `setup.sh` now prunes dangling per-skill symlinks from the OpenCode/Codex/Gemini native skill dirs. The distribution loop only ever added, so renaming or removing a skill previously left a broken symlink in all three
-- 2026-07-23: tmux transport is **no longer managed** by this repo. Removed `config/tmux.conf.tpl`, the `merge_managed_block ... "tmux AI transport"` call in `setup.sh`, its tests, and its docs/badge. Ghostty is now the sole managed terminal transport. Rationale: the settings were redundant with Ghostty's own capabilities for local use, and a managed tmux block has no per-agent format divergence to justify repo ownership. Users who still run tmux own their `~/.tmux.conf` directly. `setup.sh` has no un-merge, so the previously injected managed block must be stripped from live configs by hand (done for this machine)
+The durable decision log lives in `instructions/DECISIONS.md`. `/handoff` appends there,
+`/catchup` replays it. Read it when you need the rationale behind a convention - it is
+history rather than active guidance, so it is not loaded into every session.
 
 ## Cross-agent config
 
@@ -198,7 +181,7 @@ This repo powers Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. When upda
 | Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
 | Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
 | Skills | `skills/` | `skills/` | `skills/` (v0.41+) | `~/.codex/skills/` | - |
-| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` | `.cursor/hooks/` (per-repo, beta) |
+| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` (unmanaged - own it directly) | `.cursor/hooks/` (per-repo, beta) |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
 
@@ -259,11 +242,11 @@ After creating: install deps for the stack (`npm install` / `cargo build` / `pip
 
 This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked, covered by global gitignore).
 
-- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, auto-appends every Decided item to `## Decisions` in the durable instructions file, then appends Done / Open / Next to `.ai/journal.md`. No promotion prompt. Run it at the end of a session or when committing/pushing.
-- **`/catchup [N]`** reality-checks Open and Next items from the last N journal entries (default 1, accepts integer or `all`) against the current repo - tagging each as resolved, stale, or still-open - then replays the survivors plus any durable `## Decisions`. Run it at the start of a session.
+- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, auto-appends every Decided item to the durable decision log, then appends Done / Open / Next to `.ai/journal.md`. No promotion prompt. Run it at the end of a session or when committing/pushing.
+- **`/catchup [N]`** reality-checks Open and Next items from the last N journal entries (default 1, accepts integer or `all`) against the current repo - tagging each as resolved, stale, or still-open - then replays the survivors plus the durable decision log. Run it at the start of a session.
 - **Session-start fallback:** when starting a new session, if the user did not run `/catchup` and `.ai/journal.md` exists in the repo root, read its last entry before responding to their first message. Surface anything still-Open or marked Next.
 - **Durable instructions file:** prefer root `AI.md`; if it is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This repo uses the fallback layout.
-- **`## Decisions` in the durable instructions file** is the single source of truth for decisions. `/handoff` auto-appends Decided items here. Decided items never go into the journal - the journal is for in-flight state only (Done / Open / Next).
+- **Durable decision log:** if a `DECISIONS.md` sits beside the durable instructions file, that is the log (this repo: `instructions/DECISIONS.md`). Otherwise it is the `## Decisions` section inside the instructions file itself. Either way it is the single source of truth for decisions, and `/handoff` auto-appends Decided items to it. Decided items never go into the journal - the journal is for in-flight state only (Done / Open / Next).
 
 ## AI Nativity (New Repositories)
 

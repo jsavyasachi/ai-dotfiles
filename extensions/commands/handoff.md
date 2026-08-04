@@ -1,5 +1,5 @@
 ---
-description: 'Seal the current session into .ai/journal.md and auto-promote Decided items to AI.md ## Decisions'
+description: 'Seal the current session into .ai/journal.md and auto-promote Decided items to the durable decision log'
 ---
 
 You are sealing the current session for the next agent (which may be a different CLI: Claude Code, Codex, OpenCode, or Gemini). The goal is a high-signal handoff, not a transcript.
@@ -20,7 +20,11 @@ You are sealing the current session for the next agent (which may be a different
 
 3. **Show the summary to the user.** No confirmation prompt - proceed directly to writes.
 
-4. **Append every Decided item to `## Decisions`** in the durable instructions file from step 2 (create the heading if missing - place it just above the `## Cross-agent config` section if that section exists, otherwise at the end). Format:
+4. **Resolve the durable decision log, then append every Decided item to it:**
+   - If a `DECISIONS.md` exists in the same directory as the durable instructions file from step 2, that is the log. Append to the end of it.
+   - Otherwise the log is the `## Decisions` section inside the instructions file itself (create the heading if missing - place it just above the `## Cross-agent config` section if that section exists, otherwise at the end).
+
+   Do not create a `DECISIONS.md` in a repo that does not already have one - a repo's existing layout decides which form it uses. Format either way:
 
    ```
    - YYYY-MM-DD: <decision in one line, present tense>
@@ -28,7 +32,7 @@ You are sealing the current session for the next agent (which may be a different
 
    If the Decided bucket is empty, skip this step.
 
-5. **Append the session entry to `.ai/journal.md`** in the repo root (create the directory and file if missing). Do NOT write Decided into the journal - Decided lives in `## Decisions` only. The journal holds Done / Open / Next:
+5. **Append the session entry to `.ai/journal.md`** in the repo root (create the directory and file if missing). Do NOT write Decided into the journal - Decided lives in the decision log from step 4 only. The journal holds Done / Open / Next:
 
    ```
    ## YYYY-MM-DD HH:MM - <agent-name>
@@ -54,5 +58,5 @@ You are sealing the current session for the next agent (which may be a different
 
 - Do not invent activity. If a bucket would be empty, omit it.
 - Do not include code diffs. The journal is a memory aid, not a log.
-- Decided items always go to `## Decisions`, never to the journal. The journal is for in-flight state (Done / Open / Next); the durable instructions file is the single source of truth for decisions.
+- Decided items always go to the durable decision log, never to the journal. The journal is for in-flight state (Done / Open / Next); the decision log is the single source of truth for decisions.
 - If `.ai/journal.md` exists but is malformed, do not "fix" it - just append cleanly below.
