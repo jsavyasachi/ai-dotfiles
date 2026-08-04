@@ -74,10 +74,7 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"model": "ollama/qwen2.5-coder:14b"'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"baseURL": "http://localhost:11434/v1"'
-  assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
-  assert_file_contains "$home_dir/.codex/config.toml" 'hooks = true'
-  assert_file_contains "$home_dir/.codex/config.toml" '[[hooks.Stop]]'
-  assert_file_contains "$home_dir/.codex/config.toml" "bash $REPO_ROOT/scripts/dirty-tree-check.sh"
+  [[ ! -e "$home_dir/.codex/config.toml" ]] || fail "setup should not create ~/.codex/config.toml (codex config no longer managed)"
   [[ ! -e "$home_dir/.tmux.conf" ]] || fail "setup should not create ~/.tmux.conf (tmux transport removed)"
   assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
   assert_file_contains "$(ghostty_config_path "$home_dir")" 'progress-style = true'
@@ -107,29 +104,33 @@ test_idempotent_rerun() {
   local output
   output="$(run_setup "$home_dir")"
 
-  assert_file_contains "$home_dir/.codex/config.toml" '# >>> ai-dotfiles managed: codex config'
-  assert_eq "$(grep -c '^# >>> ai-dotfiles managed: codex config$' "$home_dir/.codex/config.toml")" "1" "managed codex block duplicated"
   assert_eq "$(printf '%s' "$output" | tail -n 1)" 'Nothing to do - already up to date.' "rerun summary mismatch"
 }
 
-test_codex_merge_preserves_local_state() {
+# Codex config is deliberately NOT managed (removed 2026-08-03). Codex rewrites
+# ~/.codex/config.toml itself and now persists model, [features], [tui], and the
+# Stop hook on its own; a merged block re-declared those tables and TOML rejects
+# a duplicate table, hard-failing Codex at startup with "duplicate key".
+test_codex_config_left_alone() {
   local home_dir
-  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-merge.XXXXXX)"
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-codex.XXXXXX)"
 
   mkdir -p "$home_dir/.codex"
   cat > "$home_dir/.codex/config.toml" <<'EOF'
 model = "gpt-5.4"
 model_reasoning_effort = "medium"
+[features]
+hooks = true
 [projects."/tmp/example"]
 trust_level = "trusted"
 EOF
+  local before
+  before="$(cat "$home_dir/.codex/config.toml")"
 
   run_setup "$home_dir" >/dev/null
 
-  assert_file_contains "$home_dir/.codex/config.toml" 'model = "gpt-5.4"'
-  assert_file_contains "$home_dir/.codex/config.toml" 'trust_level = "trusted"'
-  assert_file_contains "$home_dir/.codex/config.toml" 'project_doc_fallback_filenames = ["AI.md"]'
-  assert_eq "$(grep -c '^# >>> ai-dotfiles managed: codex config$' "$home_dir/.codex/config.toml")" "1" "managed codex block duplicated after merge"
+  assert_eq "$(cat "$home_dir/.codex/config.toml")" "$before" "setup.sh must not modify ~/.codex/config.toml"
+  assert_eq "$(grep -c 'ai-dotfiles managed: codex config' "$home_dir/.codex/config.toml" || true)" "0" "codex config must not be managed"
 }
 
 test_terminal_merges_preserve_local_state() {
@@ -253,21 +254,43 @@ test_backup_of_conflicting_files() {
   backup_dir="$(find "$home_dir" -maxdepth 1 -type d -name '.ai-dotfiles-backup-*' | head -n 1)"
 
   [[ -n "$backup_dir" ]] || fail "expected backup directory for conflicting files"
-  assert_exists "$backup_dir/settings.json"
-  assert_file_contains "$backup_dir/settings.json" 'stale settings'
+  # Backups mirror the target's path under BACKUP_DIR rather than flattening to
+  # basename: two agent roots can hold same-named entries (e.g. .codex/skills/foo
+  # and .agents/skills/foo) and a flat dir made the second `mv` abort the run.
+  assert_exists "$backup_dir/.claude/settings.json"
+  assert_file_contains "$backup_dir/.claude/settings.json" 'stale settings'
+}
+
+test_backup_handles_same_named_targets() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-backup-collide.XXXXXX)"
+
+  # Same basename under two different agent roots - the flat-backup bug.
+  mkdir -p "$home_dir/.codex/skills/tdd" "$home_dir/.gemini/skills/tdd"
+  printf '%s\n' 'codex copy' > "$home_dir/.codex/skills/tdd/SKILL.md"
+  printf '%s\n' 'gemini copy' > "$home_dir/.gemini/skills/tdd/SKILL.md"
+
+  run_setup "$home_dir" >/dev/null || fail "setup must not abort on same-named backup targets"
+
+  local backup_dir
+  backup_dir="$(find "$home_dir" -maxdepth 1 -type d -name '.ai-dotfiles-backup-*' | head -n 1)"
+  [[ -n "$backup_dir" ]] || fail "expected backup directory"
+  assert_file_contains "$backup_dir/.codex/skills/tdd/SKILL.md" 'codex copy'
+  assert_file_contains "$backup_dir/.gemini/skills/tdd/SKILL.md" 'gemini copy'
 }
 
 main() {
   test_fresh_install
   test_local_models
   test_idempotent_rerun
-  test_codex_merge_preserves_local_state
+  test_codex_config_left_alone
   test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check
   test_codex_orchestration_skill
   test_opencode_delegation_skill
   test_backup_of_conflicting_files
+  test_backup_handles_same_named_targets
   printf 'PASS: setup.sh\n'
 }
 

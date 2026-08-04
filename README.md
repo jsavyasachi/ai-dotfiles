@@ -49,9 +49,9 @@ Idempotent: safe to re-run after pulling updates.
 
 **Local-model stack**: setup installs Ollama when available, starts its service, and pulls models listed in `config/local-models.txt` idempotently. OpenCode defaults to `ollama/qwen2.5-coder:14b`.
 
-**Hooks and guardrails**: Claude Code and Codex get a soft dirty-tree Stop hook. Claude Code also gets a PreToolUse reminder before edits to agent config surfaces. Git gets a repo-local pre-commit hook that validates command and skill frontmatter for every agent.
+**Hooks and guardrails**: Claude Code gets a soft dirty-tree Stop hook and a PreToolUse reminder before edits to agent config surfaces. Git gets a repo-local pre-commit hook that validates command and skill frontmatter for every agent. Codex hooks are configured directly in `~/.codex/config.toml` (see below).
 
-**Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex uses the native TUI status-line config in `config/codex.toml.tpl`.
+**Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex's native TUI status line is configured in `~/.codex/config.toml` directly.
 
 **Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, 100k scrollback, safer close behavior, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
 
@@ -64,11 +64,11 @@ Idempotent: safe to re-run after pulling updates.
 | Universal AI instructions (tone, conventions, decisions) | `instructions/AI.md` | Symlinked as `CLAUDE.md`, `OPENCODE.md`, `GEMINI.md`, `AGENTS.md` (Codex + Cursor share `AGENTS.md`). Cursor's global User Rules need a one-time manual paste into Settings > Rules. |
 | Cross-agent slash commands | `extensions/commands/<name>.md` (YAML frontmatter + Markdown body) | `setup.sh` symlinks to Claude Code/OpenCode, generates `.toml` for Gemini, generates `SKILL.md` for Codex/OpenCode. Cursor commands are per-repo only and not auto-propagated. |
 | Hooks (Claude Code, e.g. Stop, PreToolUse) | `extensions/hooks/<name>.sh` + reference it in `config/settings.json.tpl` | The hooks dir is symlinked to `~/.claude/hooks/`; settings template is rendered to `~/.claude/settings.json` with absolute paths. |
-| Hooks (Codex) | `config/codex.toml.tpl` `[hooks]` block | Merged into `~/.codex/config.toml` inside an `ai-dotfiles managed` block (preserves your other Codex config). |
+| Hooks (Codex) | not managed - edit `~/.codex/config.toml` directly | Codex rewrites that file itself and persists `model`, `[features]`, `[tui]`, and `[[hooks.Stop]]` on its own. A managed block re-declared those tables and TOML rejects a duplicate table, so Codex hard-failed at startup with `duplicate key`. Removed 2026-08-03. |
 | Memory (Claude Code) | `extensions/memory/MEMORY.md` and `extensions/memory/<topic>.md` | Symlinked into `~/.claude/projects/<encoded-projects-path>/memory/`. |
 | Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/`, `~/.codex/skills/`, and `~/.gemini/skills/`. Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
 | Local Ollama models | `config/local-models.txt` | `setup.sh` installs Ollama if missing (macOS/brew), starts the service, and pulls each listed model idempotently. |
-| Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths, merges Codex config into an `ai-dotfiles managed` block, and copies Cursor MCP config. Gemini commands and skills are generated or linked from `extensions/`; this repo has no Gemini settings template. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
+| Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths and copies Cursor MCP config. Gemini commands and skills are generated or linked from `extensions/`; this repo has no Gemini settings template, and Codex config is no longer managed. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
 | Ghostty settings | `config/ghostty.conf.tpl`, `config/ghostty-macos.conf.tpl` | Merged into the active Ghostty config as labeled managed blocks; existing settings remain untouched outside those blocks. |
 | Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
 | Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |

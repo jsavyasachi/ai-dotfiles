@@ -37,7 +37,7 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
 1. **Read local config state**: read all source files before proposing anything:
    - `config/settings.json.tpl` - Claude Code settings template
    - `config/opencode.json.tpl` - OpenCode settings template
-   - `config/codex.toml.tpl` - Codex config template
+   - `~/.codex/config.toml` - Codex config (NOT managed by this repo; Codex owns the file and rewrites it. Read it for context, never write a managed block into it - see `instructions/DECISIONS.md`, 2026-08-03)
    - `config/cursor-mcp.json` - Cursor MCP configuration
    - `instructions/AI.md` - cross-agent policies and capability table
    - `extensions/commands/` - current cross-agent commands
@@ -56,7 +56,7 @@ Use WebFetch on these pages when you need schema details for the relevant tool. 
 4. **Wait for user approval**: do not touch any file until the user explicitly says to proceed.
 
 5. **Execute on approval**: edit only source files in this repo (never agent home dirs directly):
-   - `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/codex.toml.tpl`, and/or `config/cursor-mcp.json`
+   - `config/settings.json.tpl`, `config/opencode.json.tpl`, and/or `config/cursor-mcp.json` (there is no Codex template - Codex config is unmanaged)
    - `extensions/commands/<name>.md` (create or edit)
    - `instructions/AI.md` (if needed)
    - Then run `bash setup.sh` to distribute everything.

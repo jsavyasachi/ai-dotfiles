@@ -38,10 +38,17 @@ backup_if_needed() {
       return 0
     fi
   fi
-  # Back up
-  mkdir -p "$BACKUP_DIR"
-  mv "$target" "$BACKUP_DIR/"
-  BACKED_UP+=("$(basename "$target")")
+  # Back up, mirroring the target's location under BACKUP_DIR. A flat backup
+  # dir keys only on basename, so same-named entries from two agent roots
+  # (e.g. ~/.codex/skills/foo and ~/.agents/skills/foo) collide and `mv`
+  # aborts the whole run with "Directory not empty".
+  local rel dest_dir
+  rel="${target#"$HOME"/}"
+  [[ "$rel" == "$target" ]] && rel="${target#/}"
+  dest_dir="$BACKUP_DIR/$(dirname "$rel")"
+  mkdir -p "$dest_dir"
+  mv "$target" "$dest_dir/"
+  BACKED_UP+=("$rel")
 }
 
 make_symlink() {
@@ -459,7 +466,11 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
-merge_managed_block "$DOTFILES_DIR/config/codex.toml.tpl" "$CODEX_DIR/config.toml" "codex config" "@@DOTFILES_DIR@@" "$DOTFILES_DIR"
+# ~/.codex/config.toml is intentionally NOT managed (removed 2026-08-03). Codex
+# rewrites that file itself and now persists model, [features], [tui], and the
+# Stop hook on its own. A merged block re-declared those tables, and TOML rejects
+# a duplicate table - Codex hard-failed at startup with "duplicate key". Own your
+# Codex config directly.
 cp "$DOTFILES_DIR/config/cursor-mcp.json" "$CURSOR_DIR/mcp.json"
 
 # ── Terminal configuration ───────────────────────────────────────────────────
