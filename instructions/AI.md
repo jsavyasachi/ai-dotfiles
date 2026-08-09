@@ -6,6 +6,8 @@ Direct, technical, informal. No corporate softening.
 
 Never use em dashes (—). Use a hyphen (-) or colon (:) instead.
 
+Write using ASD-STE100 Simplified Technical English.
+
 ## Conciseness
 
 Deliver maximum information density.
