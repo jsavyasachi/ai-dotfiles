@@ -18,6 +18,7 @@ BACKED_UP=()
 SKIPPED=()
 INSTALLED_PLUGINS=()
 PULLED=()
+HF_SKILL=()
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -516,6 +517,29 @@ if [[ -f "$PLUGINS_FILE" ]] && command -v claude &>/dev/null; then
   done < "$PLUGINS_FILE"
 fi
 
+# ── Hugging Face CLI skill ─────────────────────────────────────────────────────
+#
+# hf-cli generates its skill live from the installed CLI version and writes
+# real content straight to ~/.agents/skills/hf-cli (read directly by
+# Codex/Cursor/OpenCode) - not a file this repo vendors. `hf` sometimes
+# auto-symlinks that content into extensions/skills/hf-cli via its own
+# project-detection heuristic (not cwd - verified unreliable to avoid by
+# `cd`-ing elsewhere first), which collides with the shadow-cleanup loop
+# above (it would `rm -rf` the real content next run, thinking it's a stray
+# duplicate). Remove any such symlink defensively after each install instead
+# of trying to prevent it (see DECISIONS.md 2026-08-10).
+
+if command -v hf &>/dev/null; then
+  if hf skills add -g --claude --force &>/dev/null; then
+    rm -f "$DOTFILES_DIR/extensions/skills/hf-cli"
+    HF_SKILL+=("hf-cli (Claude/Codex/Cursor/OpenCode)")
+  else
+    warn "hf-cli skill install failed"
+  fi
+else
+  SKIPPED+=("hf-cli skill (hf CLI not installed)")
+fi
+
 # ── Local models (Ollama) ─────────────────────────────────────────────────────
 
 OLLAMA_CTX=16384
@@ -605,6 +629,7 @@ for f in "${BACKED_UP[@]}"; do warn "Backed up: $f  →  $BACKUP_DIR/"; done
 for f in "${SKIPPED[@]}"; do info "Skipped:   $f"; done
 for f in "${INSTALLED_PLUGINS[@]}"; do success "Plugin:    $f"; done
 for f in "${PULLED[@]}"; do success "Pulled:    $f"; done
+for f in "${HF_SKILL[@]}"; do success "Refreshed: $f"; done
 
 if [[ -n "${CURSOR_HINT:-}" ]]; then
   printf '\n\033[1mAction required\033[0m\n'
