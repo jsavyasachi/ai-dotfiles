@@ -200,6 +200,11 @@ Easy to skip because it "already exists"; don't.
   **Gotcha:** PRs opened by the default `GITHUB_TOKEN` do NOT trigger the test
   workflow (GitHub anti-recursion) - antq dep PRs land with no CI; validate locally
   or push an empty commit before merging. (Memory: `feedback_clojure-dep-automation`.)
+- **Keep one changelog file per repository.** A stale `CHANGES.md` beside the real
+  `CHANGELOG.md` can shadow the source used for release notes. Keep the canonical
+  file, repoint references in `README.md`, `CONTRIBUTING.md`, and `.github/`, and
+  delete the duplicate. Never delete the only changelog: `lein-shell` uses
+  `CHANGES.md` as its canonical file.
 - Verify: `gh api repos/<you>/<lib>/contents/CODE_OF_CONDUCT.md` and
   `gh repo view <you>/<lib> --json repositoryTopics`.
 
@@ -353,6 +358,35 @@ tests silently lets the wrapper fall behind. On **every** bump:
 - The **`v*` tag is the release trigger**, not a push to main. `release.yml` verifies
   the tag matches `build.clj` version, runs tests, deploys, and creates the GitHub
   Release. Pushing main is always safe.
+- **Release notes must come from the changelog**, not from GitHub's PR-only generator.
+  The tag workflow extracts the tag's section into `release-notes.md`, passes
+  `body_path: release-notes.md`, and keeps `generate_release_notes: true` so the
+  compare link still appends below the body. Fail the release when the section is
+  missing:
+  ```yaml
+        - name: Extract release notes from CHANGELOG
+          if: github.ref_type == 'tag'
+          run: |
+            VERSION="${GITHUB_REF_NAME#v}"
+            awk -v v="$VERSION" '
+              $0 ~ "^## \\[" v "\\]" {found=1; next}
+              found && /^## / {exit}
+              found {print}
+            ' CHANGELOG.md > release-notes.md
+            if [ ! -s release-notes.md ]; then
+              echo "::error::CHANGELOG.md has no section for $VERSION"
+              exit 1
+            fi
+            cat release-notes.md
+  ```
+- **Match the changelog heading format that the repository uses.** Most use
+  `## [1.2.3]`; `lein-shell` uses `## 1.0.2`, and `environ` uses
+  `## lein-environ 1.4.3 (2026-06-14)`. Do not rewrite a changelog to fit one
+  extractor pattern.
+- **Match tag triggers to the tags the repository pushes.** `environ` and
+  `lein-shell` had `tags: ['v*']` but used `lein-environ-1.4.3` and `1.0.2`, so
+  their release workflows never ran on tag pushes and manual dispatch masked the
+  failure. Check the real tag names before copying `on.push.tags`.
 - **Clojars is immutable.** Re-deploying a published version returns
   `403 Non-SNAPSHOT redeploy`. There is no undo, so decide the version deliberately.
 - **A green run is not proof of publication, and a red run is not proof of failure.**
