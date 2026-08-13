@@ -203,8 +203,9 @@ Easy to skip because it "already exists"; don't.
 - **Keep one changelog file per repository.** A stale `CHANGES.md` beside the real
   `CHANGELOG.md` can shadow the source used for release notes. Keep the canonical
   file, repoint references in `README.md`, `CONTRIBUTING.md`, and `.github/`, and
-  delete the duplicate. Never delete the only changelog: `lein-shell` uses
-  `CHANGES.md` as its canonical file.
+  delete the duplicate. The canonical name is `CHANGELOG.md`: rename a `CHANGES.md`
+  with `git mv` rather than deleting it when it is the only changelog a repository
+  has.
 - Verify: `gh api repos/<you>/<lib>/contents/CODE_OF_CONDUCT.md` and
   `gh repo view <you>/<lib> --json repositoryTopics`.
 
@@ -379,10 +380,16 @@ tests silently lets the wrapper fall behind. On **every** bump:
             fi
             cat release-notes.md
   ```
-- **Match the changelog heading format that the repository uses.** Most use
-  `## [1.2.3]`; `lein-shell` uses `## 1.0.2`, and `environ` uses
-  `## lein-environ 1.4.3 (2026-06-14)`. Do not rewrite a changelog to fit one
-  extractor pattern.
+- **One heading format everywhere: `## [X.Y.Z] - YYYY-MM-DD`**, or `## [X.Y.Z]` when
+  no date is recorded. The extractor above is byte-identical in every repository and
+  is strict on purpose: it fails the release the moment a heading drifts, so it
+  enforces the format instead of tolerating exceptions. A tolerant matcher would let
+  the formats diverge again silently.
+- **A multi-artifact repo gives each module its own `CHANGELOG.md`.** Module identity
+  belongs in the path, not in the heading text. `environ` keeps
+  `environ/CHANGELOG.md` and `lein-environ/CHANGELOG.md`, with the root file reduced
+  to a pointer at both. The extractor then reads the module directory named by the
+  tag, and a bare version tag concatenates every module that has an entry.
 - **Match tag triggers to the tags the repository pushes.** `environ` and
   `lein-shell` had `tags: ['v*']` but used `lein-environ-1.4.3` and `1.0.2`, so
   their release workflows never ran on tag pushes and manual dispatch masked the
