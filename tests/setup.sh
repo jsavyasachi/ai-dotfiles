@@ -63,6 +63,8 @@ test_fresh_install() {
   assert_symlink_target "$home_dir/.config/opencode/OPENCODE.md" "$REPO_ROOT/instructions/OPENCODE.md"
   assert_symlink_target "$home_dir/.gemini/GEMINI.md" "$REPO_ROOT/instructions/GEMINI.md"
   assert_symlink_target "$home_dir/.codex/AGENTS.md" "$REPO_ROOT/instructions/AGENTS.md"
+  assert_symlink_target "$home_dir/.config/opencode/OUTPUT-STYLE.md" "$REPO_ROOT/instructions/OUTPUT-STYLE.md"
+  assert_symlink_target "$home_dir/.gemini/OUTPUT-STYLE.md" "$REPO_ROOT/instructions/OUTPUT-STYLE.md"
   [[ ! -e "$home_dir/.agents/skills" ]] || fail "legacy ~/.agents/skills should not be created"
 
   assert_file_contains "$home_dir/.claude/settings.json" '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"'
@@ -71,9 +73,13 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.claude/settings.json" '"Stop"'
   assert_file_contains "$home_dir/.claude/settings.json" "bash $home_dir/.claude/dirty-tree-check.sh"
   assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
-  assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md"]'
+  assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md", "'"$home_dir"'/.config/opencode/OUTPUT-STYLE.md"]'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"model": "ollama/qwen2.5-coder:14b"'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"baseURL": "http://localhost:11434/v1"'
+  assert_file_contains "$home_dir/.claude/settings.json" '"outputStyle": "ai-dotfiles"'
+  assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'keep-coding-instructions: true'
+  assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'Write using ASD-STE100 Simplified Technical English.'
+  assert_file_contains "$home_dir/.gemini/settings.json" '"fileName": ["GEMINI.md", "OUTPUT-STYLE.md"]'
   [[ ! -e "$home_dir/.codex/config.toml" ]] || fail "setup should not create ~/.codex/config.toml (codex config no longer managed)"
   [[ ! -e "$home_dir/.tmux.conf" ]] || fail "setup should not create ~/.tmux.conf (tmux transport removed)"
   assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
