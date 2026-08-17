@@ -199,6 +199,35 @@ make_symlink "$DOTFILES_DIR/instructions/OPENCODE.md" "$OPENCODE_DIR/OPENCODE.md
 make_symlink "$DOTFILES_DIR/instructions/GEMINI.md" "$GEMINI_DIR/GEMINI.md"
 make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
 
+# ── Output style (instructions/OUTPUT-STYLE.md) ───────────────────────────────
+# Kept separate from AI.md so it can load through each agent's native
+# "system prompt" / "additional instructions" slot instead of its plain
+# instructions file. See instructions/AI.md > Cross-agent config > Output style.
+
+make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$OPENCODE_DIR/OUTPUT-STYLE.md"
+make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$GEMINI_DIR/OUTPUT-STYLE.md"
+
+CLAUDE_OUTPUT_STYLES_DIR="$CLAUDE_DIR/output-styles"
+mkdir -p "$CLAUDE_OUTPUT_STYLES_DIR"
+CLAUDE_OUTPUT_STYLE_DEST="$CLAUDE_OUTPUT_STYLES_DIR/ai-dotfiles.md"
+CLAUDE_OUTPUT_STYLE_EXPECTED="$(
+  printf '%s\n' \
+    '---' \
+    'name: ai-dotfiles' \
+    "description: 'Direct, dense, ASD-STE100 simplified technical English'" \
+    'keep-coding-instructions: true' \
+    '---' \
+    ''
+  cat "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md"
+)"
+if [[ "$CLAUDE_OUTPUT_STYLE_EXPECTED" == "$(cat "$CLAUDE_OUTPUT_STYLE_DEST" 2>/dev/null || true)" ]]; then
+  SKIPPED+=("ai-dotfiles.md (already up to date)")
+else
+  [[ -e "$CLAUDE_OUTPUT_STYLE_DEST" ]] && backup_if_needed "$CLAUDE_OUTPUT_STYLE_DEST"
+  printf '%s\n' "$CLAUDE_OUTPUT_STYLE_EXPECTED" > "$CLAUDE_OUTPUT_STYLE_DEST"
+  COPIED+=("ai-dotfiles.md")
+fi
+
 # ── Shared statusline ─────────────────────────────────────────────────────────
 
 for dir in "$CLAUDE_DIR" "$OPENCODE_DIR"; do
@@ -467,6 +496,7 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
+sync_settings "$DOTFILES_DIR/config/gemini-settings.json.tpl" "$GEMINI_DIR/settings.json" "@@GEMINI_DIR@@" "$GEMINI_DIR"
 # ~/.codex/config.toml is intentionally NOT managed (removed 2026-08-03). Codex
 # rewrites that file itself and now persists model, [features], [tui], and the
 # Stop hook on its own. A merged block re-declared those tables, and TOML rejects

@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": ["@@OPENCODE_DIR@@/OPENCODE.md"],
+  "instructions": ["@@OPENCODE_DIR@@/OPENCODE.md", "@@OPENCODE_DIR@@/OUTPUT-STYLE.md"],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",

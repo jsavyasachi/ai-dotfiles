@@ -1,46 +1,8 @@
 # Universal AI Instructions
 
-## Tone
-
-Direct, technical, informal. No corporate softening.
-
-Never use em dashes (—). Use a hyphen (-) or colon (:) instead.
-
-Write using ASD-STE100 Simplified Technical English.
-
-## Conciseness
-
-Deliver maximum information density.
-
-### Banned patterns (ALL modes, zero exceptions)
-
-- **Openers**: start with the answer
-- **Closers**: stop when done
-- **Hedging preambles**: state the thing directly
-- **Restating the question**: never echo
-- **Praise**: NEVER EVER
-- **Filler transitions**: useless
-- **Obvious disclaimers**: unless they carry real informational weight (e.g. safety warnings)
-
-### Default mode (always active)
-
-Lean and dense. First word = actual answer. Yes/no leads with yes/no + minimal context. Bullets over paragraphs. Drop any sentence that doesn't add information. Complete sentences only where a fragment would lose meaning. Code: block first, explanation only if code alone is insufficient.
-
-### Max concise mode (triggered: "be concise" / "short" / "brief")
-
-Strip further: fragments, shorthand, no connective prose. Target: fewest correct words.
-
-### Detailed mode (triggered: "details" / "elaborate" / "in depth")
-
-More substance, zero fluff. Reverts to default next message.
-
-### Code (both modes)
-
-Lead with code block. Brief non-obvious comments only. No boilerplate comments.
-
-### Never cut
-
-Technical accuracy. Real gotchas. Process steps (compress wording, not steps). Nuance that changes the answer.
+Tone, conciseness, and vocabulary rules live in `instructions/OUTPUT-STYLE.md`,
+not here - see `Cross-agent config` > `Output style` below for why and how
+each agent loads it.
 
 ## Questions
 
@@ -187,6 +149,20 @@ This repo powers Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. When upda
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` (unmanaged - own it directly) | `.cursor/hooks/` (per-repo, beta) |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
+
+### Output style
+
+`instructions/OUTPUT-STYLE.md` (Tone, Conciseness, ASD-STE100) is a separate
+canonical file from `AI.md`, wired into each agent's native "system prompt" or
+"additional instructions" slot instead of its plain instructions file, so it
+applies as strongly as each agent allows rather than competing with ordinary
+CLAUDE.md/AGENTS.md text for the model's attention:
+
+- **Claude Code**: `setup.sh` generates `~/.claude/output-styles/ai-dotfiles.md` (frontmatter + the file's body, `keep-coding-instructions: true`) from it every run. `config/settings.json.tpl` sets `"outputStyle": "ai-dotfiles"` as the default. Native output styles apply to the main conversation and forks only - subagents run their own system prompt and do not inherit it.
+- **OpenCode**: `config/opencode.json.tpl`'s `instructions` array lists `OUTPUT-STYLE.md` alongside `OPENCODE.md` - OpenCode concatenates every listed file.
+- **Gemini CLI**: `config/gemini-settings.json.tpl` sets `context.fileName` to `["GEMINI.md", "OUTPUT-STYLE.md"]` - Gemini CLI concatenates every named context file it finds per directory.
+- **Codex**: no automated path. Codex reads one `AGENTS.md` with no multi-file or import syntax, and `~/.codex/config.toml` is intentionally unmanaged (see `Decisions`), so a managed `developer_instructions` key can't be templated in safely. To opt in manually, add `developer_instructions = "instructions/OUTPUT-STYLE.md"` (absolute path) to your own `~/.codex/config.toml`.
+- **Cursor**: no automated path. Paste `instructions/OUTPUT-STYLE.md` into Settings > Rules alongside `AI.md`, same manual, once-per-machine step as the rest of Cursor's global rules.
 
 Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
 

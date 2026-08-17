@@ -23,6 +23,7 @@
     "type": "command",
     "command": "bash @@CLAUDE_DIR@@/statusline-command.sh"
   },
+  "outputStyle": "ai-dotfiles",
   "terminalProgressBarEnabled": true,
   "preferredNotifChannel": "ghostty",
   "hooks": {
