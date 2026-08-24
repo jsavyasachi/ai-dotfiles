@@ -296,9 +296,10 @@ CODEX_NATIVE_SKILLS_DIR="$CODEX_DIR/skills"
 GEMINI_COMMANDS_DIR="$GEMINI_DIR/commands"
 mkdir -p "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
 
-for old_name in checkpoint ship; do
+for old_name in checkpoint ship handoff catchup; do
   old_gemini="$GEMINI_COMMANDS_DIR/$old_name.toml"
   old_codex="$CODEX_NATIVE_SKILLS_DIR/$old_name"
+  old_opencode="$OPENCODE_NATIVE_SKILLS_DIR/$old_name"
   if [[ -f "$old_gemini" ]]; then
     rm -f "$old_gemini"
     REMOVED+=("$old_name.toml (Gemini)")
@@ -306,6 +307,10 @@ for old_name in checkpoint ship; do
   if [[ -d "$old_codex" ]]; then
     rm -rf "$old_codex"
     REMOVED+=("$old_name/SKILL.md (Codex)")
+  fi
+  if [[ -d "$old_opencode" ]]; then
+    rm -rf "$old_opencode"
+    REMOVED+=("$old_name/SKILL.md (OpenCode)")
   fi
 done
 

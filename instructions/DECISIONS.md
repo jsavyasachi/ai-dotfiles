@@ -1,7 +1,7 @@
 # Decisions
 
-Durable decision log for `ai-dotfiles`. Appended by `/handoff`; replayed by `/catchup`.
-One line per decision, newest last. Split out of `instructions/AI.md` on 2026-08-03 so the
+Durable decision log for `ai-dotfiles`. One line per decision, newest last. Split out of
+`instructions/AI.md` on 2026-08-03 so the
 log stops loading into every agent session.
 
 - 2026-05-04: commit/push cadence uses hybrid architecture: prose policy in `AI.md` + `/commit` and `/push` slash commands + soft Stop hook (dirty-tree nag on session end)

@@ -160,11 +160,19 @@ test_cross_agent_commands() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-cmds.XXXXXX)"
 
-  mkdir -p "$home_dir/.gemini/commands" "$home_dir/.codex/skills/checkpoint" "$home_dir/.codex/skills/ship"
+  mkdir -p "$home_dir/.gemini/commands" "$home_dir/.codex/skills/checkpoint" "$home_dir/.codex/skills/ship" \
+    "$home_dir/.gemini/commands" "$home_dir/.codex/skills/handoff" "$home_dir/.codex/skills/catchup" \
+    "$home_dir/.config/opencode/skills/handoff" "$home_dir/.config/opencode/skills/catchup"
   printf '%s\n' 'old checkpoint' > "$home_dir/.gemini/commands/checkpoint.toml"
   printf '%s\n' 'old ship' > "$home_dir/.gemini/commands/ship.toml"
   printf '%s\n' 'old checkpoint' > "$home_dir/.codex/skills/checkpoint/SKILL.md"
   printf '%s\n' 'old ship' > "$home_dir/.codex/skills/ship/SKILL.md"
+  printf '%s\n' 'old handoff' > "$home_dir/.gemini/commands/handoff.toml"
+  printf '%s\n' 'old catchup' > "$home_dir/.gemini/commands/catchup.toml"
+  printf '%s\n' 'old handoff' > "$home_dir/.codex/skills/handoff/SKILL.md"
+  printf '%s\n' 'old catchup' > "$home_dir/.codex/skills/catchup/SKILL.md"
+  printf '%s\n' 'old handoff' > "$home_dir/.config/opencode/skills/handoff/SKILL.md"
+  printf '%s\n' 'old catchup' > "$home_dir/.config/opencode/skills/catchup/SKILL.md"
 
   run_setup "$home_dir" >/dev/null
 
@@ -182,14 +190,18 @@ test_cross_agent_commands() {
     assert_file_contains "$home_dir/.codex/skills/$name/SKILL.md" 'description: '
   done
 
-  assert_file_contains "$home_dir/.codex/skills/catchup/SKILL.md" 'instructions/AI.md'
-  assert_file_contains "$home_dir/.codex/skills/handoff/SKILL.md" 'instructions/AI.md'
   assert_file_contains "$home_dir/.codex/skills/commit/SKILL.md" 'Commit the current logical unit'
   assert_file_contains "$home_dir/.codex/skills/push/SKILL.md" 'Push the current branch'
   [[ ! -e "$home_dir/.gemini/commands/checkpoint.toml" ]] || fail "old checkpoint Gemini command should not exist"
   [[ ! -e "$home_dir/.gemini/commands/ship.toml" ]] || fail "old ship Gemini command should not exist"
   [[ ! -e "$home_dir/.codex/skills/checkpoint" ]] || fail "old checkpoint Codex skill should not exist"
   [[ ! -e "$home_dir/.codex/skills/ship" ]] || fail "old ship Codex skill should not exist"
+  [[ ! -e "$home_dir/.gemini/commands/handoff.toml" ]] || fail "removed handoff Gemini command should not exist"
+  [[ ! -e "$home_dir/.gemini/commands/catchup.toml" ]] || fail "removed catchup Gemini command should not exist"
+  [[ ! -e "$home_dir/.codex/skills/handoff" ]] || fail "removed handoff Codex skill should not exist"
+  [[ ! -e "$home_dir/.codex/skills/catchup" ]] || fail "removed catchup Codex skill should not exist"
+  [[ ! -e "$home_dir/.config/opencode/skills/handoff" ]] || fail "removed handoff OpenCode skill should not exist"
+  [[ ! -e "$home_dir/.config/opencode/skills/catchup" ]] || fail "removed catchup OpenCode skill should not exist"
 
   # Global gitignore picked up '.ai/'.
   assert_exists "$home_dir/.config/git/ignore"

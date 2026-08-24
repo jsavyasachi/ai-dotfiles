@@ -57,7 +57,6 @@ Do not accumulate uncommitted work across tasks. If task N+1 starts while task N
 Push at natural boundaries and when done:
 - The user signals end-of-session, done, or asks to push.
 - A coherent feature is complete and tests pass.
-- `/handoff` is invoked.
 - `/push` is invoked.
 
 Before pushing, run the docs/instructions audit in `## Repo Changes`. If tests or typecheck fail before pushing, surface the failure and ask before pushing.
@@ -132,9 +131,9 @@ Minimum check:
 
 ## Decisions
 
-The durable decision log lives in `instructions/DECISIONS.md`. `/handoff` appends there,
-`/catchup` replays it. Read it when you need the rationale behind a convention - it is
-history rather than active guidance, so it is not loaded into every session.
+The durable decision log lives in `instructions/DECISIONS.md`. Read it when you need the
+rationale behind a convention - it is history rather than active guidance, so it is not
+loaded into every session.
 
 ## Cross-agent config
 
@@ -164,7 +163,7 @@ CLAUDE.md/AGENTS.md text for the model's attention:
 - **Codex**: no automated path. Codex reads one `AGENTS.md` with no multi-file or import syntax, and `~/.codex/config.toml` is intentionally unmanaged (see `Decisions`), so a managed `developer_instructions` key can't be templated in safely. To opt in manually, add `developer_instructions = "instructions/OUTPUT-STYLE.md"` (absolute path) to your own `~/.codex/config.toml`.
 - **Cursor**: no automated path. Paste `instructions/OUTPUT-STYLE.md` into Settings > Rules alongside `AI.md`, same manual, once-per-machine step as the rest of Cursor's global rules.
 
-Cross-agent slash commands (`/handoff`, `/catchup`, `/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
+Cross-agent slash commands (`/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
 
 Cross-agent skills (third-party or local) live in `extensions/skills/<name>/` (gitignored). `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and Gemini (`~/.gemini/skills/`) - Gemini v0.41+ has native Agent Skills, auto-registered as `/<name>` slash commands. Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
 
@@ -218,16 +217,6 @@ Directory: `.worktrees/` at the repo root. Ignored globally by `setup.sh`, so no
 Before creating one, run the Step 0 detection: if `git rev-parse --git-dir` differs from `git rev-parse --git-common-dir` (and you are not in a submodule), you are already in a worktree - reuse it instead of nesting.
 
 After creating: install deps for the stack (`npm install` / `cargo build` / `pip install -r requirements.txt` / `go mod download`) and run the baseline test suite before touching code.
-
-## Session continuity
-
-This repo and downstream projects use a per-repo session journal at `.ai/journal.md` (untracked, covered by global gitignore).
-
-- **`/handoff`** seals the current session: summarizes Done / Decided / Open / Next, auto-appends every Decided item to the durable decision log, then appends Done / Open / Next to `.ai/journal.md`. No promotion prompt. Run it at the end of a session or when committing/pushing.
-- **`/catchup [N]`** reality-checks Open and Next items from the last N journal entries (default 1, accepts integer or `all`) against the current repo - tagging each as resolved, stale, or still-open - then replays the survivors plus the durable decision log. Run it at the start of a session.
-- **Session-start fallback:** when starting a new session, if the user did not run `/catchup` and `.ai/journal.md` exists in the repo root, read its last entry before responding to their first message. Surface anything still-Open or marked Next.
-- **Durable instructions file:** prefer root `AI.md`; if it is absent and `instructions/AI.md` exists, use `instructions/AI.md` instead. This repo uses the fallback layout.
-- **Durable decision log:** if a `DECISIONS.md` sits beside the durable instructions file, that is the log (this repo: `instructions/DECISIONS.md`). Otherwise it is the `## Decisions` section inside the instructions file itself. Either way it is the single source of truth for decisions, and `/handoff` auto-appends Decided items to it. Decided items never go into the journal - the journal is for in-flight state only (Done / Open / Next).
 
 ## AI Nativity (New Repositories)
 

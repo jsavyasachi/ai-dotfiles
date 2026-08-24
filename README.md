@@ -39,8 +39,6 @@ Idempotent: safe to re-run after pulling updates.
 
 | Command | What it does |
 |---|---|
-| `/handoff` | Seal session into `.ai/journal.md`; append decisions to `AI.md` / `instructions/AI.md` |
-| `/catchup [N]` | Replay last N journal entries + durable decisions |
 | `/commit` | Commit current logical unit (Conventional Commits) |
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
@@ -54,8 +52,6 @@ Idempotent: safe to re-run after pulling updates.
 **Status line**: Claude Code and OpenCode get the shared `scripts/statusline-command.sh`; Codex's native TUI status line is configured in `~/.codex/config.toml` directly.
 
 **Terminal activity**: Ghostty gets progress bars, notifications, shell awareness, readable split styling, 100k scrollback, safer close behavior, and macOS session tabs. Claude Code explicitly emits Ghostty progress and notifications. `setup.sh` merges labeled blocks into existing terminal configs instead of replacing user settings.
-
-**Session continuity**: downstream repos use untracked `.ai/journal.md` for handoff/catchup state and tracked `AI.md` decisions for durable project policy.
 
 ## Repo layout: where to edit what
 
