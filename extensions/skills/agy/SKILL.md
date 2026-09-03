@@ -80,7 +80,7 @@ explicit target:
 ```bash
 git diff > /tmp/review.diff     # or --base <branch>, or a commit range
 agy --print "$(cat review-prompt.md)" --mode plan --output-format json \
-  --model <slug> --disable-slash-commands
+  --model <slug> 2> review.err
 ```
 
 For risky or substantial diffs, use a fresh `--mode plan` session for independent final review. Do

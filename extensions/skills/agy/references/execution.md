@@ -170,8 +170,11 @@ Resume with the conversation id from the result object:
 
 ```bash
 agy --print "<specific follow-up>" --conversation <conversation_id> \
-  --output-format json --disable-slash-commands
+  --mode <mode> --output-format json > <log-file> 2> <err-file>
 ```
+
+Pass `--mode` explicitly on a resume rather than assuming the original session's
+mode carries over; that inheritance has not been verified.
 
 Resume when context remains relevant and the previous turn is complete. Start a new session for
 unrelated work, required isolation, corrupted or unknown state after bounded inspection, or an
