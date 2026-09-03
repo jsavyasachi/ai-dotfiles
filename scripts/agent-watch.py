@@ -29,6 +29,10 @@ DIM, BOLD, RED, GREEN, YELLOW, RESET = (
     "\033[2m", "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[0m",
 )
 STALL_SECONDS = 120
+# Carriage-return animation only works on a real terminal. Piped or captured
+# output (Claude Code's bash pane, CI logs, a file) renders every frame as its
+# own line, so there we print a line only when the state actually changes.
+TTY = sys.stderr.isatty()
 
 
 def elapsed(seconds):
@@ -40,7 +44,7 @@ class State:
     def __init__(self):
         self.tool = None
         self.model = None
-        self.activity = "starting"
+        self.activity = "waiting for first event"
         self.commands = 0
         self.edits = 0
         self.denials = 0
@@ -96,36 +100,61 @@ class State:
                 else f"responded ({len(body)} chars)"
 
 
-def render(state, started, frame, stalled):
-    spin = SPINNER[frame % len(SPINNER)]
-    age = time.time() - started
-    parts = [
-        f"{BOLD}{spin} {state.tool or '?'}{RESET}",
-        f"{DIM}{state.model or 'model?'}{RESET}",
-        elapsed(age),
-        state.activity,
-    ]
+def _summary(state):
+    """The parts that carry information, without the spinner or the clock."""
     counts = []
     if state.commands:
         counts.append(f"{state.commands} cmd")
     if state.edits:
         counts.append(f"{state.edits} edits")
+    return state.tool or "?", state.model or "model?", state.activity, tuple(counts)
+
+
+def render(state, started, frame, stalled, last=[None]):
+    tool, model, activity, counts = _summary(state)
+    age = elapsed(time.time() - started)
+
+    if not TTY:
+        # Only speak when something changed, so a captured log stays readable.
+        if (tool, model, activity, counts) == last[0]:
+            return
+        last[0] = (tool, model, activity, counts)
+        bits = [tool, model, age, activity] + list(counts)
+        sys.stderr.write(" · ".join(bits) + "\n")
+        sys.stderr.flush()
+        return
+
+    parts = [
+        f"{BOLD}{SPINNER[frame % len(SPINNER)]} {tool}{RESET}",
+        f"{DIM}{model}{RESET}",
+        age,
+        activity,
+    ]
     if counts:
         parts.append(f"{GREEN}{' · '.join(counts)}{RESET}")
     if stalled:
         parts.append(f"{YELLOW}no output {elapsed(time.time() - state.last_event)}{RESET}")
-    line = f"{DIM} · {RESET}".join(parts)
-    sys.stderr.write("\r\033[2K" + line)
+    sys.stderr.write("\r\033[2K" + f"{DIM} · {RESET}".join(parts))
     sys.stderr.flush()
 
 
 def main():
-    if len(sys.argv) < 2:
-        sys.exit("usage: agent-watch.py <logfile>")
-    path = sys.argv[1]
+    args = sys.argv[1:]
+    if not args:
+        sys.exit("usage: agent-watch.py <logfile> [--tool NAME] [--model NAME]")
+    path = args[0]
 
     started = time.time()
     state = State()
+
+    # The stream announces the tool and model only once it starts, which can be
+    # several seconds in. Let the caller label the line immediately instead of
+    # showing "? · model?" during exactly the window the user is most unsure.
+    for flag, attr in (("--tool", "tool"), ("--model", "model")):
+        if flag in args:
+            i = args.index(flag)
+            if i + 1 < len(args):
+                setattr(state, attr, args[i + 1])
     frame = 0
     pos = 0
 
@@ -160,8 +189,9 @@ def main():
 
         if state.done:
             colour = RED if "EMPTY" in (state.outcome or "") or "FAIL" in (state.outcome or "") else GREEN
+            prefix = "\r\033[2K" if TTY else ""
             sys.stderr.write(
-                f"\r\033[2K{colour}●{RESET} {state.tool} finished in {elapsed(time.time() - started)}"
+                f"{prefix}{colour}●{RESET} {state.tool} finished in {elapsed(time.time() - started)}"
                 f" · {state.commands} cmd · {state.edits} edits · {state.outcome}\n"
             )
             sys.stderr.flush()
