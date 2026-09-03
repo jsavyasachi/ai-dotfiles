@@ -144,6 +144,29 @@ EOF
 
 # agy owns and rewrites this file, including permissions, model selection, and
 # trusted workspaces. setup.sh must leave existing agy state byte-identical.
+# setup.sh previously created global GEMINI.md / OUTPUT-STYLE.md symlinks and
+# ~/.gemini/{skills,commands} for Gemini CLI. agy reads none of them. Converge an
+# already-migrated machine by removing the ones this repo provably created.
+test_legacy_gemini_rules_removed() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-legacy-rules.XXXXXX)"
+
+  mkdir -p "$home_dir/.gemini/skills" "$home_dir/.gemini/commands"
+  ln -s "$REPO_ROOT/instructions/GEMINI.md" "$home_dir/.gemini/GEMINI.md"
+  ln -s "$REPO_ROOT/instructions/OUTPUT-STYLE.md" "$home_dir/.gemini/OUTPUT-STYLE.md"
+
+  # A symlink this repo did not create must survive.
+  ln -s /etc/hosts "$home_dir/.gemini/user-owned.md"
+
+  run_setup "$home_dir" >/dev/null
+
+  [[ ! -L "$home_dir/.gemini/GEMINI.md" ]] || fail "legacy global GEMINI.md symlink should be removed"
+  [[ ! -L "$home_dir/.gemini/OUTPUT-STYLE.md" ]] || fail "legacy global OUTPUT-STYLE.md symlink should be removed"
+  [[ ! -d "$home_dir/.gemini/skills" ]] || fail "empty legacy ~/.gemini/skills should be removed"
+  [[ ! -d "$home_dir/.gemini/commands" ]] || fail "empty legacy ~/.gemini/commands should be removed"
+  [[ -L "$home_dir/.gemini/user-owned.md" ]] || fail "must not remove symlinks this repo did not create"
+}
+
 test_agy_settings_left_alone() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-agy-settings.XXXXXX)"
@@ -341,6 +364,7 @@ main() {
   test_idempotent_rerun
   test_codex_config_left_alone
   test_agy_settings_left_alone
+  test_legacy_gemini_rules_removed
   test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check

@@ -329,6 +329,19 @@ for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   fi
 done
 
+# Remove the global rules symlinks this repo created for Gemini CLI. agy reads
+# GEMINI.md/AGENTS.md per project by walking up from the working directory, so
+# these have no reader. Only symlinks pointing into this repo are removed.
+for legacy_rule in GEMINI.md OUTPUT-STYLE.md; do
+  legacy_path="$AGY_ROOT/$legacy_rule"
+  [[ -L "$legacy_path" ]] || continue
+  legacy_target="$(readlink "$legacy_path")"
+  if [[ "$legacy_target" == "$DOTFILES_DIR/"* ]]; then
+    rm -f "$legacy_path"
+    REMOVED+=("$legacy_rule (legacy Gemini CLI global rules symlink)")
+  fi
+done
+
 # Remove only legacy Gemini skill symlinks that point into this repo. Real
 # directories and symlinks to user-owned content are preserved.
 if [[ -d "$LEGACY_GEMINI_SKILLS_DIR" ]]; then
@@ -341,6 +354,14 @@ if [[ -d "$LEGACY_GEMINI_SKILLS_DIR" ]]; then
     fi
   done
 fi
+
+# Drop the legacy Gemini CLI directories once this repo's artifacts are out of
+# them. rmdir fails harmlessly if the user still keeps their own files there.
+for legacy_dir in "$LEGACY_GEMINI_SKILLS_DIR" "$LEGACY_GEMINI_COMMANDS_DIR"; do
+  if [[ -d "$legacy_dir" ]] && rmdir "$legacy_dir" 2>/dev/null; then
+    REMOVED+=("$(basename "$legacy_dir")/ (empty legacy Gemini CLI directory)")
+  fi
+done
 
 write_if_changed() {
   local dest="$1" expected="$2" label="$3"
