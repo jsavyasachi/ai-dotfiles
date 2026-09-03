@@ -38,6 +38,7 @@ extensions/skills/*
 !extensions/skills/readme-badges/
 !extensions/skills/clojure-libs/
 !extensions/skills/codex/
+!extensions/skills/agy/
 !extensions/skills/opencode/
 
 # macOS
