@@ -90,10 +90,14 @@ cd <worktree> && agy --print "$(cat <prompt-file>)" \
 
 Use `--mode plan` for investigation and review, `--mode accept-edits` for a write task.
 
-`accept-edits` covers the edit tool only. agy often creates or modifies files with a shell command
-instead, which needs a `command(...)` grant regardless of mode: a write task can be denied under
-`accept-edits` purely because the model reached for the shell. Instructing the prompt to use the
-file-writing tool rather than a shell command makes the mode do what it looks like it does.
+`--mode` does not grant anything in headless mode. `--mode accept-edits` with no `write_file` rule
+has the edit tool auto-denied every time; the mode selects intent, `permissions.allow` decides. Treat
+the mode as documentation of what the run is for, and the grant as the thing that makes it possible.
+
+Which grant a write needs also depends on the tool agy picks for it, and it picks freely: the same
+"create this file" instruction may go through `write_file` or through a shell command such as `sed`.
+Those need different rules, so a write task wants both a `write_file` grant and `command(...)` rules
+for whatever the verification runs.
 
 Never pass `--disable-slash-commands` together with `--mode`. The flag silently voids the mode:
 agy warns `--mode plan has no effect while slash command expansion is disabled` on stderr and then
@@ -126,8 +130,15 @@ tool and its target, so shell commands and file writes are granted separately:
 ```
 
 `command(...)` covers `run_command`, and the target is the literal command agy invokes, not the shell
-it might have used. `write_file(...)` covers the edit tool. The denial message names the permission
-that was refused, so read stderr to learn which family a run actually needs.
+it might have used; scoping works, so `command(wc)` genuinely permits only `wc`.
+
+`write_file(...)` does not scope. Tested against a fixed path, every targeted form is denied - the
+exact path, a `dir/*` glob, the directory, the bare basename, and `write_file` with no parentheses.
+Only `write_file(*)` is accepted. File writes are therefore all-or-nothing: granting one write grants
+every write, so dispatch a write task into a disposable worktree and remove the rule afterwards.
+
+The denial message on stderr names the permission family that was refused, which is the only reliable
+way to learn what a given run needs.
 
 `command(bash)` does NOT cover `command(wc)`: agy invokes commands directly, so a rule naming the
 shell matches nothing. Full invocations are valid targets, so prefer the narrowest form that covers
@@ -183,9 +194,8 @@ agy --print "<specific follow-up>" --conversation <conversation_id> \
   --mode <mode> --output-format json > <log-file> 2> <err-file>
 ```
 
-Pass `--mode` on every resume. Whether a resume inherits the original session's mode is untested:
-the obvious A/B is confounded because agy picks its own tool for a write, so two runs can differ in
-tool choice rather than in mode. Passing it explicitly costs nothing and removes the question.
+Pass `--mode` on every resume. It costs nothing, and in headless mode the grant comes from
+`permissions.allow` regardless (see below), so nothing depends on whether a resume inherits it.
 
 Resume when context remains relevant and the previous turn is complete. Start a new session for
 unrelated work, required isolation, corrupted or unknown state after bounded inspection, or an
