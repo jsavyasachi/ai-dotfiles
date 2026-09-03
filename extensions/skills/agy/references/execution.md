@@ -90,6 +90,11 @@ cd <worktree> && agy --print "$(cat <prompt-file>)" \
 
 Use `--mode plan` for investigation and review, `--mode accept-edits` for a write task.
 
+`accept-edits` covers the edit tool only. agy often creates or modifies files with a shell command
+instead, which needs a `command(...)` grant regardless of mode: a write task can be denied under
+`accept-edits` purely because the model reached for the shell. Instructing the prompt to use the
+file-writing tool rather than a shell command makes the mode do what it looks like it does.
+
 Never pass `--disable-slash-commands` together with `--mode`. The flag silently voids the mode:
 agy warns `--mode plan has no effect while slash command expansion is disabled` on stderr and then
 runs without the mode's restriction. Read-only enforcement and that flag are mutually exclusive, so
@@ -108,16 +113,21 @@ done nothing. `--mode` does not grant anything: `accept-edits` covers edit tools
 investigation still needs shell commands. Without a grant, even a read-only task returns an empty
 response.
 
-Grants live in `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`. A rule targets the
-literal command agy invokes, not the shell it might have used:
+Grants live in `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`. A rule names the
+tool and its target, so shell commands and file writes are granted separately:
 
 ```json
 {"permissions": {"allow": [
   "command(grep)",
   "command(git)",
-  "command(bash -n setup.sh)"
+  "command(bash -n setup.sh)",
+  "write_file(<path>)"
 ]}}
 ```
+
+`command(...)` covers `run_command`, and the target is the literal command agy invokes, not the shell
+it might have used. `write_file(...)` covers the edit tool. The denial message names the permission
+that was refused, so read stderr to learn which family a run actually needs.
 
 `command(bash)` does NOT cover `command(wc)`: agy invokes commands directly, so a rule naming the
 shell matches nothing. Full invocations are valid targets, so prefer the narrowest form that covers
@@ -173,8 +183,10 @@ agy --print "<specific follow-up>" --conversation <conversation_id> \
   --mode <mode> --output-format json > <log-file> 2> <err-file>
 ```
 
-Pass `--mode` explicitly on a resume rather than assuming the original session's
-mode carries over; that inheritance has not been verified.
+A resume does not inherit the original session's mode. Verified: a session run with
+`--mode accept-edits` wrote a file through the edit tool; resuming that same
+conversation without `--mode` had the identical write auto-denied for the
+`write_file` permission. Pass `--mode` on every resume.
 
 Resume when context remains relevant and the previous turn is complete. Start a new session for
 unrelated work, required isolation, corrupted or unknown state after bounded inspection, or an
