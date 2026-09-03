@@ -183,10 +183,9 @@ agy --print "<specific follow-up>" --conversation <conversation_id> \
   --mode <mode> --output-format json > <log-file> 2> <err-file>
 ```
 
-A resume does not inherit the original session's mode. Verified: a session run with
-`--mode accept-edits` wrote a file through the edit tool; resuming that same
-conversation without `--mode` had the identical write auto-denied for the
-`write_file` permission. Pass `--mode` on every resume.
+Pass `--mode` on every resume. Whether a resume inherits the original session's mode is untested:
+the obvious A/B is confounded because agy picks its own tool for a write, so two runs can differ in
+tool choice rather than in mode. Passing it explicitly costs nothing and removes the question.
 
 Resume when context remains relevant and the previous turn is complete. Start a new session for
 unrelated work, required isolation, corrupted or unknown state after bounded inspection, or an
