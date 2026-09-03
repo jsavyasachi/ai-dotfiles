@@ -25,14 +25,17 @@ import sys
 import time
 
 SPINNER = "✻✳✶✻✳✶"
-DIM, BOLD, RED, GREEN, YELLOW, RESET = (
-    "\033[2m", "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[0m",
-)
 STALL_SECONDS = 120
 # Carriage-return animation only works on a real terminal. Piped or captured
 # output (Claude Code's bash pane, CI logs, a file) renders every frame as its
 # own line, so there we print a line only when the state actually changes.
 TTY = sys.stderr.isatty()
+# Colour is noise once the output is captured: the raw escape codes show up
+# verbatim in a pane that does not interpret them.
+DIM, BOLD, RED, GREEN, YELLOW, RESET = (
+    ("\033[2m", "\033[1m", "\033[31m", "\033[32m", "\033[33m", "\033[0m")
+    if TTY else ("", "", "", "", "", "")
+)
 
 
 def elapsed(seconds):

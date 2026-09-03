@@ -10,13 +10,11 @@ command -v agy >/dev/null || { echo "agy not found"; exit 1; }
 
 cd "$REPO_ROOT"
 
-# Several small allowed commands, so the activity line visibly advances.
-agy --print "Do these one at a time, using a separate shell command for each:
-1. wc -l README.md
-2. wc -l setup.sh
-3. ls scripts
-4. grep -c agy README.md
-Then reply DONE." \
+# Two separate allowed commands, so the activity line visibly advances. agy
+# batches commands if invited to, and a batched line matches no command(<name>)
+# allow-rule, so the prompt insists on separate invocations.
+agy --print "Run wc -l README.md as one shell command. Then, as a separate
+shell command, run wc -l setup.sh. Do not combine them. Then reply DONE." \
   --model gemini-3.8-flash-low \
   --output-format stream-json \
   --print-timeout 5m \
