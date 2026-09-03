@@ -61,10 +61,10 @@ test_fresh_install() {
 
   assert_symlink_target "$home_dir/.claude/CLAUDE.md" "$REPO_ROOT/instructions/CLAUDE.md"
   assert_symlink_target "$home_dir/.config/opencode/OPENCODE.md" "$REPO_ROOT/instructions/OPENCODE.md"
-  assert_symlink_target "$home_dir/.gemini/GEMINI.md" "$REPO_ROOT/instructions/GEMINI.md"
   assert_symlink_target "$home_dir/.codex/AGENTS.md" "$REPO_ROOT/instructions/AGENTS.md"
   assert_symlink_target "$home_dir/.config/opencode/OUTPUT-STYLE.md" "$REPO_ROOT/instructions/OUTPUT-STYLE.md"
-  assert_symlink_target "$home_dir/.gemini/OUTPUT-STYLE.md" "$REPO_ROOT/instructions/OUTPUT-STYLE.md"
+  [[ ! -e "$home_dir/.gemini/GEMINI.md" ]] || fail "agy discovers project rules; setup should not create a global GEMINI.md"
+  [[ ! -e "$home_dir/.gemini/OUTPUT-STYLE.md" ]] || fail "agy has no global OUTPUT-STYLE.md path"
   [[ ! -e "$home_dir/.agents/skills" ]] || fail "legacy ~/.agents/skills should not be created"
 
   assert_file_contains "$home_dir/.claude/settings.json" '"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"'
@@ -79,7 +79,10 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.claude/settings.json" '"outputStyle": "ai-dotfiles"'
   assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'keep-coding-instructions: true'
   assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'Write using ASD-STE100 Simplified Technical English.'
-  assert_file_contains "$home_dir/.gemini/settings.json" '"fileName": ["GEMINI.md", "OUTPUT-STYLE.md"]'
+  [[ ! -e "$home_dir/.gemini/antigravity-cli/settings.json" ]] || fail "setup should not create agy settings"
+  [[ ! -e "$home_dir/.gemini/settings.json" ]] || fail "setup should not create Gemini CLI settings"
+  [[ ! -e "$home_dir/.gemini/commands" ]] || fail "setup should not create Gemini CLI commands"
+  [[ ! -e "$home_dir/.gemini/skills" ]] || fail "setup should not create Gemini CLI skills"
   [[ ! -e "$home_dir/.codex/config.toml" ]] || fail "setup should not create ~/.codex/config.toml (codex config no longer managed)"
   [[ ! -e "$home_dir/.tmux.conf" ]] || fail "setup should not create ~/.tmux.conf (tmux transport removed)"
   assert_file_contains "$(ghostty_config_path "$home_dir")" '# >>> ai-dotfiles managed: ghostty AI sessions'
@@ -139,6 +142,24 @@ EOF
   assert_eq "$(grep -c 'ai-dotfiles managed: codex config' "$home_dir/.codex/config.toml" || true)" "0" "codex config must not be managed"
 }
 
+# agy owns and rewrites this file, including permissions, model selection, and
+# trusted workspaces. setup.sh must leave existing agy state byte-identical.
+test_agy_settings_left_alone() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-agy-settings.XXXXXX)"
+
+  mkdir -p "$home_dir/.gemini/antigravity-cli"
+  cat > "$home_dir/.gemini/antigravity-cli/settings.json" <<'EOF'
+{"enableTelemetry":false,"model":"Claude Opus 4.6 (Thinking)","trustedWorkspaces":["/Users/savya/projects"],"permissions":{"allow":["command(*)"]}}
+EOF
+  local before
+  before="$(cat "$home_dir/.gemini/antigravity-cli/settings.json")"
+
+  run_setup "$home_dir" >/dev/null
+
+  assert_eq "$(cat "$home_dir/.gemini/antigravity-cli/settings.json")" "$before" "setup.sh must not modify agy settings"
+}
+
 test_terminal_merges_preserve_local_state() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-terminal-merge.XXXXXX)"
@@ -176,14 +197,13 @@ test_cross_agent_commands() {
 
   run_setup "$home_dir" >/dev/null
 
-  # For every canonical command, expect derivatives in Gemini + Codex.
+  # For every canonical command, expect a Codex derivative. agy has no TOML
+  # command format, so commands are not translated for it.
   for src in "$REPO_ROOT"/extensions/commands/*.md; do
     local name
     name="$(basename "$src" .md)"
 
-    assert_exists "$home_dir/.gemini/commands/$name.toml"
-    assert_file_contains "$home_dir/.gemini/commands/$name.toml" 'description = "'
-    assert_file_contains "$home_dir/.gemini/commands/$name.toml" 'prompt = """'
+    [[ ! -e "$home_dir/.gemini/commands/$name.toml" ]] || fail "Gemini command should be removed: $name.toml"
 
     assert_exists "$home_dir/.codex/skills/$name/SKILL.md"
     assert_file_contains "$home_dir/.codex/skills/$name/SKILL.md" "name: $name"
@@ -254,9 +274,27 @@ test_opencode_delegation_skill() {
   assert_exists "$skill_dir/templates/task-prompt.md"
   assert_file_contains "$skill_dir/SKILL.md" 'smaller task scope'
   grep -Fq -- '--format json' "$skill_dir/SKILL.md" || fail "expected '--format json' in $skill_dir/SKILL.md"
-  assert_exists "$home_dir/.gemini/skills/opencode/SKILL.md"
-  assert_exists "$home_dir/.gemini/skills/opencode/references/execution.md"
-  assert_exists "$home_dir/.gemini/skills/opencode/templates/task-prompt.md"
+  assert_exists "$home_dir/.gemini/config/skills/opencode/SKILL.md"
+  assert_exists "$home_dir/.gemini/config/skills/opencode/references/execution.md"
+  assert_exists "$home_dir/.gemini/config/skills/opencode/templates/task-prompt.md"
+}
+
+test_gemini_artifact_cleanup_preserves_user_content() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-gemini-cleanup.XXXXXX)"
+
+  mkdir -p "$home_dir/.gemini/commands" "$home_dir/.gemini/skills"
+  printf '%s\n' 'generated command' > "$home_dir/.gemini/commands/commit.toml"
+  printf '%s\n' 'user command' > "$home_dir/.gemini/commands/user-command.toml"
+  ln -s "$REPO_ROOT/extensions/skills/tdd" "$home_dir/.gemini/skills/tdd"
+  ln -s "$REPO_ROOT/instructions" "$home_dir/.gemini/skills/user-skill"
+
+  run_setup "$home_dir" >/dev/null
+
+  [[ ! -e "$home_dir/.gemini/commands/commit.toml" ]] || fail "generated Gemini command should be removed"
+  assert_file_contains "$home_dir/.gemini/commands/user-command.toml" 'user command'
+  [[ ! -e "$home_dir/.gemini/skills/tdd" && ! -L "$home_dir/.gemini/skills/tdd" ]] || fail "generated Gemini skill symlink should be removed"
+  assert_symlink_target "$home_dir/.gemini/skills/user-skill" "$REPO_ROOT/instructions"
 }
 
 test_backup_of_conflicting_files() {
@@ -284,9 +322,9 @@ test_backup_handles_same_named_targets() {
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-backup-collide.XXXXXX)"
 
   # Same basename under two different agent roots - the flat-backup bug.
-  mkdir -p "$home_dir/.codex/skills/tdd" "$home_dir/.gemini/skills/tdd"
+  mkdir -p "$home_dir/.codex/skills/tdd" "$home_dir/.gemini/config/skills/tdd"
   printf '%s\n' 'codex copy' > "$home_dir/.codex/skills/tdd/SKILL.md"
-  printf '%s\n' 'gemini copy' > "$home_dir/.gemini/skills/tdd/SKILL.md"
+  printf '%s\n' 'agy copy' > "$home_dir/.gemini/config/skills/tdd/SKILL.md"
 
   run_setup "$home_dir" >/dev/null || fail "setup must not abort on same-named backup targets"
 
@@ -294,7 +332,7 @@ test_backup_handles_same_named_targets() {
   backup_dir="$(find "$home_dir" -maxdepth 1 -type d -name '.ai-dotfiles-backup-*' | head -n 1)"
   [[ -n "$backup_dir" ]] || fail "expected backup directory"
   assert_file_contains "$backup_dir/.codex/skills/tdd/SKILL.md" 'codex copy'
-  assert_file_contains "$backup_dir/.gemini/skills/tdd/SKILL.md" 'gemini copy'
+  assert_file_contains "$backup_dir/.gemini/config/skills/tdd/SKILL.md" 'agy copy'
 }
 
 main() {
@@ -302,11 +340,13 @@ main() {
   test_local_models
   test_idempotent_rerun
   test_codex_config_left_alone
+  test_agy_settings_left_alone
   test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check
   test_codex_orchestration_skill
   test_opencode_delegation_skill
+  test_gemini_artifact_cleanup_preserves_user_content
   test_backup_of_conflicting_files
   test_backup_handles_same_named_targets
   printf 'PASS: setup.sh\n'

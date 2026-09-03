@@ -161,8 +161,11 @@ OS_NAME="$(uname -s)"
 # Define agents and their home directories
 CLAUDE_DIR="$HOME/.claude"
 OPENCODE_DIR="$HOME/.config/opencode"
-GEMINI_DIR="$HOME/.gemini"
-GEMINI_SKILLS_DIR="$GEMINI_DIR/skills"
+AGY_ROOT="$HOME/.gemini"
+AGY_CONFIG_DIR="$AGY_ROOT/config"
+AGY_SKILLS_DIR="$AGY_CONFIG_DIR/skills"
+LEGACY_GEMINI_COMMANDS_DIR="$AGY_ROOT/commands"
+LEGACY_GEMINI_SKILLS_DIR="$AGY_ROOT/skills"
 CODEX_DIR="$HOME/.codex"
 CURSOR_DIR="$HOME/.cursor"
 
@@ -170,14 +173,13 @@ printf '\n\033[1mAI agent dotfiles setup\033[0m\n'
 printf 'Dotfiles: %s\n' "$DOTFILES_DIR"
 printf 'Claude:   %s\n' "$CLAUDE_DIR"
 printf 'OpenCode: %s\n' "$OPENCODE_DIR"
-printf 'Gemini:   %s\n' "$GEMINI_DIR"
+printf 'agy:      %s\n' "$AGY_ROOT"
 printf 'Codex:    %s\n' "$CODEX_DIR"
 printf 'Cursor:   %s\n\n' "$CURSOR_DIR"
 
 mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
-mkdir -p "$GEMINI_DIR"
-mkdir -p "$GEMINI_SKILLS_DIR"
+mkdir -p "$AGY_SKILLS_DIR"
 mkdir -p "$CODEX_DIR"
 mkdir -p "$CURSOR_DIR"
 
@@ -196,8 +198,11 @@ fi
 
 make_symlink "$DOTFILES_DIR/instructions/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 make_symlink "$DOTFILES_DIR/instructions/OPENCODE.md" "$OPENCODE_DIR/OPENCODE.md"
-make_symlink "$DOTFILES_DIR/instructions/GEMINI.md" "$GEMINI_DIR/GEMINI.md"
 make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
+
+# agy discovers GEMINI.md and AGENTS.md by walking from the working directory
+# to the repository root. Project-level AI Nativity symlinks provide its rules;
+# agy has no global rules file to install here.
 
 # ── Output style (instructions/OUTPUT-STYLE.md) ───────────────────────────────
 # Kept separate from AI.md so it can load through each agent's native
@@ -205,7 +210,6 @@ make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
 # instructions file. See instructions/AI.md > Cross-agent config > Output style.
 
 make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$OPENCODE_DIR/OUTPUT-STYLE.md"
-make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$GEMINI_DIR/OUTPUT-STYLE.md"
 
 CLAUDE_OUTPUT_STYLES_DIR="$CLAUDE_DIR/output-styles"
 mkdir -p "$CLAUDE_OUTPUT_STYLES_DIR"
@@ -288,21 +292,21 @@ fi
 # Single canonical source: extensions/commands/<name>.md (Markdown + YAML
 # frontmatter). Distributed to each agent in its native format:
 #   - Claude / OpenCode: covered by whole-dir symlink above (.md as-is).
-#   - Gemini CLI:        generate ~/.gemini/commands/<name>.toml.
 #   - Codex:             generate ~/.codex/skills/<name>/SKILL.md.
+# agy has no TOML command format. Its reusable commands are skills, so no
+# command derivative is generated here.
 
 OPENCODE_NATIVE_SKILLS_DIR="$OPENCODE_DIR/skills"
 CODEX_NATIVE_SKILLS_DIR="$CODEX_DIR/skills"
-GEMINI_COMMANDS_DIR="$GEMINI_DIR/commands"
-mkdir -p "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_COMMANDS_DIR"
+mkdir -p "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR"
 
 for old_name in checkpoint ship handoff catchup; do
-  old_gemini="$GEMINI_COMMANDS_DIR/$old_name.toml"
+  old_gemini="$LEGACY_GEMINI_COMMANDS_DIR/$old_name.toml"
   old_codex="$CODEX_NATIVE_SKILLS_DIR/$old_name"
   old_opencode="$OPENCODE_NATIVE_SKILLS_DIR/$old_name"
   if [[ -f "$old_gemini" ]]; then
     rm -f "$old_gemini"
-    REMOVED+=("$old_name.toml (Gemini)")
+    REMOVED+=("$old_name.toml (legacy Gemini CLI command)")
   fi
   if [[ -d "$old_codex" ]]; then
     rm -rf "$old_codex"
@@ -314,18 +318,29 @@ for old_name in checkpoint ship handoff catchup; do
   fi
 done
 
-# Remove stale Gemini command TOMLs that came from skills (pre-v0.41 workaround).
-# Gemini v0.41+ auto-registers each native skill as /<name>, so a TOML of the
-# same name now collides ("User command" + "Skill command" rename conflict).
+# Remove stale Gemini CLI command TOMLs that this repo generated from skills.
 for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   [[ -d "$skill_src" ]] || continue
   skill_name="$(basename "$skill_src")"
-  stale_toml="$GEMINI_COMMANDS_DIR/$skill_name.toml"
+  stale_toml="$LEGACY_GEMINI_COMMANDS_DIR/$skill_name.toml"
   if [[ -f "$stale_toml" ]]; then
     rm -f "$stale_toml"
-    REMOVED+=("$skill_name.toml (stale Gemini command, now a native skill)")
+    REMOVED+=("$skill_name.toml (legacy Gemini CLI command)")
   fi
 done
+
+# Remove only legacy Gemini skill symlinks that point into this repo. Real
+# directories and symlinks to user-owned content are preserved.
+if [[ -d "$LEGACY_GEMINI_SKILLS_DIR" ]]; then
+  for legacy_skill in "$LEGACY_GEMINI_SKILLS_DIR"/*; do
+    [[ -L "$legacy_skill" ]] || continue
+    legacy_target="$(readlink "$legacy_skill")"
+    if [[ "$legacy_target" == "$DOTFILES_DIR/extensions/skills/"* ]]; then
+      rm -f "$legacy_skill"
+      REMOVED+=("$(basename "$legacy_skill") (legacy Gemini CLI skill symlink)")
+    fi
+  done
+fi
 
 write_if_changed() {
   local dest="$1" expected="$2" label="$3"
@@ -346,6 +361,12 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   [[ -e "$src" ]] || continue
   name="$(basename "$src" .md)"
 
+  legacy_gemini_command="$LEGACY_GEMINI_COMMANDS_DIR/$name.toml"
+  if [[ -f "$legacy_gemini_command" ]]; then
+    rm -f "$legacy_gemini_command"
+    REMOVED+=("$name.toml (legacy Gemini CLI command)")
+  fi
+
   # Extract the true scalar value of `description:` via a real YAML parser, so
   # we get the unquoted text regardless of how the source author wrote it
   # (quoted or not). Re-quoting per target below is then always correct.
@@ -355,16 +376,9 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   # Strip a single leading blank line from body if present.
   body="${body#$'\n'}"
 
-  # Re-quote the description for each target so special chars (': ', ' #',
-  # quotes) can never break the generated file:
-  #   YAML single-quoted scalar: escape ' as ''  (used for Codex/OpenCode)
-  #   TOML basic string:         escape \ then "  (used for Gemini)
+  # Re-quote the description as a YAML single-quoted scalar so special chars
+  # (': ', ' #', quotes) can never break the generated skill frontmatter.
   desc_yaml="'${description//\'/\'\'}'"
-  desc_toml="${description//\\/\\\\}"; desc_toml="${desc_toml//\"/\\\"}"
-
-  # Gemini TOML: description + triple-quoted prompt.
-  gemini_out=$'description = "'"$desc_toml"$'"\nprompt = """\n'"$body"$'\n"""\n'
-  write_if_changed "$GEMINI_COMMANDS_DIR/$name.toml" "$gemini_out" "$name.toml (Gemini)"
 
   # OpenCode SKILL.md: same YAML frontmatter format as Codex.
   opencode_out=$'---\nname: '"$name"$'\ndescription: '"$desc_yaml"$'\n---\n\n'"$body"$'\n'
@@ -378,33 +392,22 @@ done
 # ── Cross-agent skills: propagate extensions/skills/<name>/ ──────────────────
 #
 # extensions/skills/ is the canonical location for Claude (whole-dir symlink
-# above). Mirror each skill subdir into OpenCode and Codex skill dirs as
-# per-skill symlinks so all three agents share one source of truth.
+# above). Mirror each skill subdir into OpenCode, Codex, and agy skill dirs as
+# per-skill symlinks so all four agents share one source of truth.
 
 for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   [[ -d "$skill_src" ]] || continue
   skill_name="$(basename "$skill_src")"
   make_symlink "${skill_src%/}" "$OPENCODE_NATIVE_SKILLS_DIR/$skill_name"
   make_symlink "${skill_src%/}" "$CODEX_NATIVE_SKILLS_DIR/$skill_name"
-
-  # Gemini v0.41+ supports native Agent Skills - per-skill symlink into
-  # ~/.gemini/skills/. Also remove any ~/.agents/skills/<name> entry (e.g.
-  # from a manual `gemini skills install`), since Gemini's same-tier
-  # precedence (.agents/skills > .gemini/skills) would shadow our managed
-  # symlink.
-  make_symlink "${skill_src%/}" "$GEMINI_SKILLS_DIR/$skill_name"
-  shadow="$HOME/.agents/skills/$skill_name"
-  if [[ -d "$shadow" || -L "$shadow" ]]; then
-    rm -rf "$shadow"
-    REMOVED+=("$HOME/.agents/skills/$skill_name (was shadowing $skill_name in $HOME/.gemini/skills)")
-  fi
+  make_symlink "${skill_src%/}" "$AGY_SKILLS_DIR/$skill_name"
 done
 
 # Prune per-skill symlinks whose source no longer exists (skill renamed or
 # removed). The loop above only ever adds, so without this a rename leaves a
 # broken symlink behind in every native skills dir. Only dangling SYMLINKS are
 # removed, never real directories, so hand-installed skills are left alone.
-for native_skills_dir in "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$GEMINI_SKILLS_DIR"; do
+for native_skills_dir in "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$AGY_SKILLS_DIR"; do
   [[ -d "$native_skills_dir" ]] || continue
   for entry in "$native_skills_dir"/*; do
     if [[ -L "$entry" && ! -e "$entry" ]]; then
@@ -501,7 +504,8 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
-sync_settings "$DOTFILES_DIR/config/gemini-settings.json.tpl" "$GEMINI_DIR/settings.json" "@@GEMINI_DIR@@" "$GEMINI_DIR"
+# ~/.gemini/antigravity-cli/settings.json is intentionally not managed. agy
+# rewrites it and owns its model, permissions, and trusted-workspace state.
 # ~/.codex/config.toml is intentionally NOT managed (removed 2026-08-03). Codex
 # rewrites that file itself and now persists model, [features], [tui], and the
 # Stop hook on its own. A merged block re-declared those tables, and TOML rejects
