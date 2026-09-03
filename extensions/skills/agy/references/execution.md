@@ -38,6 +38,10 @@ The catalog spans vendors, not just Gemini. Map the task shape to a tier, then r
 | Standard scoped implementation or test-writing | flash-class model | `medium` |
 | Multi-step refactor, ambiguous investigation, independent review | pro- or opus-class model | `high` |
 
+Tier on what remains uncertain, not on the size of the original task. A repair prompt that already
+carries the finding, the required correction, and a reference implementation is mechanical work
+however large the underlying feature was: send it to the cheap tier.
+
 For Gemini slugs the effort tier is baked into the name (`gemini-3.1-pro-high` versus
 `gemini-3.1-pro-low`). When the slug already carries a tier, do not also pass `--effort`; use
 `--effort low|medium|high` only for models whose slug has no tier suffix. State the resolved slug and
@@ -67,18 +71,62 @@ cd <worktree> && agy --print "$(cat <prompt-file>)" \
   --model <slug> \
   --output-format json \
   --json-schema <schema-file> \
-  --disable-slash-commands \
   --print-timeout 30m \
-  > <log-file>
+  > <log-file> 2> <err-file>
 ```
 
-Use `--mode plan` for investigation and review. A write task needs `--mode accept-edits`, and any
-tool outside the auto-approved set still requires either a `permissions.allow` rule in agy's
-`settings.json` or explicitly authorized `--dangerously-skip-permissions`. Do not add permissive
-approval or sandbox bypasses without explicit user authorization.
+Use `--mode plan` for investigation and review, `--mode accept-edits` for a write task.
+
+Never pass `--disable-slash-commands` together with `--mode`. The flag silently voids the mode:
+agy warns `--mode plan has no effect while slash command expansion is disabled` on stderr and then
+runs without the mode's restriction. Read-only enforcement and that flag are mutually exclusive, so
+prefer the mode and neutralise slash-like text in the prompt instead.
+
+Redirect stderr to its own file on every dispatch. Permission denials and the mode warning appear
+only there.
 
 `--print-timeout` defaults to 5m. A longer task that exceeds it is cut off, so set it deliberately
 from the expected task length rather than accepting the default.
+
+## Permissions are mandatory, and independent of mode
+
+Headless agy cannot prompt, so any tool needing permission is auto-denied and the run ends having
+done nothing. `--mode` does not grant anything: `accept-edits` covers edit tools only, and a plain
+investigation still needs shell commands. Without a grant, even a read-only task returns an empty
+response.
+
+Grants live in `permissions.allow` in `~/.gemini/antigravity-cli/settings.json`. A rule targets the
+literal command agy invokes, not the shell it might have used:
+
+```json
+{"permissions": {"allow": [
+  "command(grep)",
+  "command(git)",
+  "command(bash -n setup.sh)"
+]}}
+```
+
+`command(bash)` does NOT cover `command(wc)`: agy invokes commands directly, so a rule naming the
+shell matches nothing. Full invocations are valid targets, so prefer the narrowest form that covers
+the task. `command(*)` allows every command and is a blanket grant: treat it as equivalent to
+`--dangerously-skip-permissions` for shell access and require explicit user authorization plus an
+isolated worktree.
+
+Enumerated grants work only when you know the command set in advance. For open-ended delegation you
+do not: agy chooses its own commands, and its logs record the denial without recording the command
+it wanted, so there is nothing to enumerate from. A run denied this way costs a full model call and
+produces nothing.
+
+So there are two honest modes of operation:
+
+- **Known command set** (a specific verification, a scripted check): enumerate literal targets. This
+  is the preferred form and needs no special authorization.
+- **Open-ended delegation** (implement, refactor, investigate): requires `command(*)`. Get explicit
+  user authorization, dispatch into a disposable worktree, and treat the worktree as the containment
+  boundary, because the grant is not one.
+
+Never leave `command(*)` installed after the run. Restore the previous `permissions.allow` when the
+task completes.
 
 ## Result shape
 
@@ -95,7 +143,7 @@ successful, when any of these hold:
 - `response` is empty or whitespace.
 - stderr carries the auto-denial notice: a tool required a permission that headless mode cannot
   prompt for, so it was auto-denied. The run still reports `"status": "SUCCESS"` with an empty
-  response and no files changed.
+  response and no files changed. This is the most common failure; check it first.
 - `num_turns` is 1 on a task that necessarily required tool use.
 - The parsed `--json-schema` result is absent or fails validation.
 - `git status --short` is unchanged on a task that was supposed to write.

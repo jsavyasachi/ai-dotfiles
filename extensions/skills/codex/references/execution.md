@@ -45,6 +45,11 @@ Map the task shape to a tier, then resolve the tier to a current slug:
 | Standard scoped implementation or test-writing | balanced agentic coding model | `medium` |
 | Multi-step refactor, ambiguous investigation, independent review | strongest agentic model | `high` or above |
 
+Tier on what remains uncertain, not on the size of the original task. A repair prompt that already
+carries the finding, the required correction, and a reference implementation is mechanical work
+however large the underlying feature was: send it to the cheap tier. Escalating a pre-diagnosed fix
+to the strongest model buys nothing and costs the most.
+
 Both `codex exec` and `codex exec review` accept `-m/--model`. Effort has no flag, so set it with
 `-c model_reasoning_effort=<effort>`. State the resolved slug and effort when reporting the run.
 
@@ -80,8 +85,16 @@ Parse JSONL for the thread id, turn completion, turn failure, errors, and recent
 the thread id and use:
 
 ```bash
-codex exec resume <thread-id> "<specific follow-up>"
+codex exec resume <thread-id> --json -m <slug> -c model_reasoning_effort=<effort> "<follow-up>"
 ```
+
+`resume` does NOT accept `-s/--sandbox`: it inherits the sandbox of the session it resumes, and
+passing `-s` fails outright with `unexpected argument '-s' found`. It does accept `-m`, `-c`,
+`--json`, and `--output-schema <FILE>`, which enforces the result contract that the prompt can only
+request. Prefer `--output-schema` on any resume whose result you intend to parse.
+
+Never append another command after the dispatch on the same line. A trailing `echo` replaces the
+exit status with its own, turning a failed launch into an apparent success.
 
 Resume when context remains relevant and the previous turn is idle or complete. Start a new session
 for unrelated work, required isolation, corrupted/unknown state after bounded inspection, or an

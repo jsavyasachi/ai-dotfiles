@@ -21,6 +21,9 @@ substitute `gemini` for `agy` here.
    - Read-only investigation or review: `--mode plan`.
    - Trivial isolated write with a clean, uncontested tree: current worktree is acceptable.
    - Non-trivial write, dirty tree, concurrent session, or multi-step task: use a dedicated worktree.
+   Then confirm a permission grant exists. Headless agy auto-denies any tool needing permission and
+   exits reporting success, so an ungranted run does nothing at all. This is a prerequisite, not a
+   detail: check it before dispatch, not after.
 4. Define one bounded task with goal, non-goals, allowed files, constraints, acceptance criteria,
    verification commands, approval boundaries, and a stop condition.
 5. Dispatch from the target directory and capture the JSON result. Record the emitted
@@ -63,8 +66,8 @@ Treat this object as a claim. Compare it with the diff, logs, and independently 
   network access, Docker socket access, or out-of-workspace writes unless explicitly authorized.
 - Prefer `--mode plan` for anything that does not need to write. `--dangerously-skip-permissions`
   requires explicit user authorization and an isolated worktree; pair it with `--sandbox`.
-- Always pass `--disable-slash-commands` in print mode. A templated prompt containing `/text` would
-  otherwise expand as a slash command or skill.
+- Never combine `--disable-slash-commands` with `--mode`: the flag silently voids the mode, so a run
+  you believe is read-only is not. See references/execution.md.
 - Do not let agy commit unless the task explicitly requires a commit.
 - Do not accept weakened tests, deleted coverage, narrowed inputs, skipped checks, or unrelated edits.
 - Do not dump a large diff by default. Summarize it and provide the path or command to inspect it.
