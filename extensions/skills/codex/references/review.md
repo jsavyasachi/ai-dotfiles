@@ -27,6 +27,10 @@ Use a fresh read-only Codex review for substantial, risky, security-sensitive, o
 diffs. Review the actual target with `--uncommitted`, `--base`, or `--commit`. Save the review prompt
 and output beside the implementation log when durable run state is in use.
 
+Run the reviewer at the strongest listed tier and `high` effort or above, and do not reuse the
+implementation session's slug and effort. A rereview by the same model at the same depth tends to
+reproduce the original blind spot rather than expose it.
+
 If the orchestrator finds a defect, send the exact finding and evidence to the implementation
 session before accepting a repair. Resolve disagreement as one of:
 
