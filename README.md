@@ -69,6 +69,8 @@ Idempotent: safe to re-run after pulling updates.
 | Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
 | Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |
 | Stop-hook dirty-tree behavior | `scripts/dirty-tree-check.sh` | Symlinked to `~/.claude/`; Codex references it via absolute path in the merged config block. |
+| Live view of a delegated run | `scripts/agent-watch.py` | Tails a codex or agy dispatch log and reports the tool, model, elapsed time, current activity and command/edit counts. Animates in place on a terminal; prints one line per state change when the output is captured. Not installed anywhere - run it directly. |
+| agy permission matrix | `scripts/probe-agy-permissions.sh` | Re-derives which `permissions.allow` rule forms agy actually accepts. Restores settings on exit. |
 
 After editing any of the above, run `bash setup.sh`. It's idempotent and prints what changed.
 
