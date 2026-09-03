@@ -12,9 +12,11 @@ Before dispatch:
    directories, and GPU/CPU capacity when applicable.
 4. Define integration order and the final repository-level verification.
 
-Because `agy` takes its workspace root from the process working directory, each parallel session must
-be launched from its own worktree directory. Two sessions started from the same directory share a
-workspace regardless of their file claims.
+`agy` does not confine itself to the directory it was launched from: an observed run wrote into the
+main checkout instead of its worktree. Parallel agy writers therefore cannot be isolated by working
+directory alone, and two sessions may collide in a repository neither was pointed at. Until a
+reliable confinement mechanism is established, do not run parallel agy writers. Run them
+sequentially and verify the affected repositories after each one.
 
 Address every session by its `conversation_id`. Never use `-c`/`--continue` while more than one
 session exists: it resumes the most recent conversation globally, so under parallelism it will

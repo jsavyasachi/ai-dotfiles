@@ -17,9 +17,22 @@ Detect an existing worktree by comparing `git rev-parse --git-dir` with
 write from the primary checkout, create `.worktrees/<task>` on a dedicated branch, install required
 dependencies, and run the baseline tests before editing.
 
-`agy` has no working-directory flag. The workspace root is the process working directory, so launch
-the command from the intended worktree and use `--add-dir <path>` (repeatable) only to extend the
-workspace beyond it.
+`agy` has no working-directory flag, and launching it from a directory does NOT confine it there.
+Observed: a run launched with the working directory set to `.worktrees/<task>` wrote its entire diff
+into the main checkout instead, while reporting the relative paths from the prompt as though they
+were the worktree's. agy resolves its own project root; the process working directory is at most a
+hint.
+
+Treat worktree isolation as unverified for every agy run:
+
+- Record `git status --short` for the main checkout AND every worktree before dispatch, not just the
+  target.
+- After the run, check all of them. A clean target worktree plus a claimed diff means the write
+  landed somewhere else; find it before doing anything else.
+- Never dispatch agy while the main checkout holds uncommitted work you cannot afford to have
+  touched. Commit or branch it first.
+
+`--add-dir <path>` extends the workspace; it does not restrict it.
 
 ## Model selection
 
