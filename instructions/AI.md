@@ -10,7 +10,7 @@ Ask one question at a time. Never bundle multiple questions in a single message.
 
 When the answer space is discrete/enumerable, use the agent's structured question tool instead of plain text:
 - Claude Code: `AskUserQuestion`
-- Gemini CLI: `ask_user` (`choice` type)
+- Antigravity CLI (`agy`): no confirmed structured tool - ask in plain text with 2-4 numbered options
 - OpenCode: `question` tool
 - Codex: `request_user_input` - Plan Mode only; falls back to plain text with enumerated options elsewhere
 - Cursor: no confirmed structured tool - ask in plain text with 2-4 enumerated options
@@ -137,35 +137,35 @@ loaded into every session.
 
 ## Cross-agent config
 
-This repo powers Claude Code, OpenCode, Gemini CLI, Codex, and Cursor. When updating settings, update analogues too:
+This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Cursor. When updating settings, update analogues too:
 
-| Capability | Claude Code | OpenCode | Gemini CLI | Codex | Cursor |
+| Capability | Claude Code | OpenCode | Antigravity CLI (`agy`) | Codex | Cursor |
 |---|---|---|---|---|---|
-| Settings | `settings.json` | `opencode.json` | `settings.json` | `config.toml` | Cursor Settings UI (no file) |
-| Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
-| Slash commands | `commands/` (.md) | `commands/` (.md) | `commands/` (.toml) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
-| Skills | `skills/` | `skills/` | `skills/` (v0.41+) | `~/.codex/skills/` | - |
-| Hooks | `settings.json` | `hooks.yaml` (plugin) | hooks (v0.26+) | `config.toml` `[hooks]` (unmanaged - own it directly) | `.cursor/hooks/` (per-repo, beta) |
+| Settings | `settings.json` | `opencode.json` | not managed - agy owns `~/.gemini/antigravity-cli/settings.json` | `config.toml` | Cursor Settings UI (no file) |
+| Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` or `AGENTS.md` (per-repo) | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
+| Slash commands | `commands/` (.md) | `commands/` (.md) | - (use skills) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
+| Skills | `skills/` | `skills/` | `~/.gemini/config/skills/` | `~/.codex/skills/` | - |
+| Hooks | `settings.json` | `hooks.yaml` (plugin) | `~/.gemini/config/hooks.json` | `config.toml` `[hooks]` (unmanaged - own it directly) | `.cursor/hooks/` (per-repo, beta) |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
 
 ### Output style
 
 `instructions/OUTPUT-STYLE.md` (Tone, Conciseness, ASD-STE100) is a separate
-canonical file from `AI.md`, wired into each agent's native "system prompt" or
-"additional instructions" slot instead of its plain instructions file, so it
-applies as strongly as each agent allows rather than competing with ordinary
-CLAUDE.md/AGENTS.md text for the model's attention:
+canonical file from `AI.md`. It is wired into each supported agent's native
+"system prompt" or "additional instructions" slot instead of its plain
+instructions file, so it applies as strongly as each agent allows rather than
+competing with ordinary CLAUDE.md/AGENTS.md text for the model's attention:
 
 - **Claude Code**: `setup.sh` generates `~/.claude/output-styles/ai-dotfiles.md` (frontmatter + the file's body, `keep-coding-instructions: true`) from it every run. `config/settings.json.tpl` sets `"outputStyle": "ai-dotfiles"` as the default. Native output styles apply to the main conversation and forks only - subagents run their own system prompt and do not inherit it.
 - **OpenCode**: `config/opencode.json.tpl`'s `instructions` array lists `OUTPUT-STYLE.md` alongside `OPENCODE.md` - OpenCode concatenates every listed file.
-- **Gemini CLI**: `config/gemini-settings.json.tpl` sets `context.fileName` to `["GEMINI.md", "OUTPUT-STYLE.md"]` - Gemini CLI concatenates every named context file it finds per directory.
+- **Antigravity CLI (`agy`)**: no automated global output-style path. It discovers project `GEMINI.md` and `AGENTS.md` files while walking to the repository root; the AI Nativity symlinks provide those project rules.
 - **Codex**: no automated path. Codex reads one `AGENTS.md` with no multi-file or import syntax, and `~/.codex/config.toml` is intentionally unmanaged (see `Decisions`), so a managed `developer_instructions` key can't be templated in safely. To opt in manually, add `developer_instructions = "instructions/OUTPUT-STYLE.md"` (absolute path) to your own `~/.codex/config.toml`.
 - **Cursor**: no automated path. Paste `instructions/OUTPUT-STYLE.md` into Settings > Rules alongside `AI.md`, same manual, once-per-machine step as the rest of Cursor's global rules.
 
-Cross-agent slash commands (`/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` distributes them: symlink to Claude/OpenCode, transform to TOML for Gemini, transform to a Codex skill (`name`+`description` frontmatter) for Codex. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
+Cross-agent slash commands (`/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` symlinks them to Claude/OpenCode and transforms them into skills (`name`+`description` frontmatter) for OpenCode and Codex. `agy` has no TOML slash-command format, so commands are not translated for it; reusable agy commands must be authored as skills. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.
 
-Cross-agent skills (third-party or local) live in `extensions/skills/<name>/`. The directory is ignored by default so third-party installs (`npx skills add`, which land here via Claude's `~/.claude/skills` symlink) stay untracked; every first-party skill authored in this repo is explicitly un-ignored by name in `.gitignore`, so adding one means adding its `!extensions/skills/<name>/` line too. `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), per-skill symlink into OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and Gemini (`~/.gemini/skills/`) - Gemini v0.41+ has native Agent Skills, auto-registered as `/<name>` slash commands. Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
+Cross-agent skills (third-party or local) live in `extensions/skills/<name>/`. The directory is ignored by default so third-party installs (`npx skills add`, which land here via Claude's `~/.claude/skills` symlink) stay untracked; every first-party skill authored in this repo is explicitly un-ignored by name in `.gitignore`, so adding one means adding its `!extensions/skills/<name>/` line too. `setup.sh` distributes them: symlink the whole dir to Claude (`~/.claude/skills/`), then create per-skill symlinks for OpenCode (`~/.config/opencode/skills/`), Codex (`~/.codex/skills/`), and `agy` (`~/.gemini/config/skills/`). Cursor has no global skills/commands path, so skills are not propagated to Cursor today.
 
 The `hf-cli` skill is the one exception to that model: `hf skills add` generates it live from the installed `hf` CLI version rather than reading a vendored file, and it writes its own real content straight to `~/.agents/skills/hf-cli` (read directly by Codex/Cursor/OpenCode). `hf` sometimes auto-symlinks that content into `extensions/skills/hf-cli` via its own project-detection heuristic - not tied to shell cwd, so `cd`-ing elsewhere first does not prevent it - which would collide with the shadow-cleanup loop above (it would `rm -rf` the real content next run, mistaking it for a stray duplicate). `setup.sh` runs `hf skills add -g --claude --force` whenever `hf` is installed and then removes any such symlink defensively afterward, rather than trying to avoid triggering it (see DECISIONS.md 2026-08-10). This keeps Claude's `~/.claude/skills/hf-cli` symlink and the `~/.agents/skills/hf-cli` content current. Gemini CLI is not covered - no upstream `~/.agents/skills` support declared for it.
 
@@ -180,9 +180,9 @@ YAML `description:` values in `SKILL.md` and `extensions/commands/*.md` break on
 This is enforced mechanically, not by convention:
 - **`extensions/hooks/validate-skill-frontmatter.sh`** - canonical, tool-agnostic validator (bash + `/usr/bin/ruby` YAML). Catches both footguns.
 - **Git pre-commit hook** (`extensions/hooks/pre-commit-skill-frontmatter.sh`, symlinked into `.git/hooks/pre-commit` by `setup.sh`) - blocks committing any staged `SKILL.md` / command `.md` with broken frontmatter. Cross-agent by construction: fires on `git commit` regardless of which agent staged the edit, unlike a Claude-only PreToolUse hook.
-- **`setup.sh` self-check** - validates all sources before distributing and aborts on failure; the command->skill generator re-quotes every `description` per target (YAML single-quote for Codex/OpenCode, TOML basic string for Gemini) so it can never emit a broken file.
+- **`setup.sh` self-check** - validates all sources before distributing and aborts on failure; the command->skill generator re-quotes every `description` as a YAML single-quoted scalar for Codex/OpenCode so it can never emit a broken file.
 
-When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It fetches official docs for all 5 tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
+When planning any change to AI agent settings, configuration, hooks, slash commands, skills, `setup.sh` propagation logic, or anything under `extensions/`, `config/`, or `instructions/AI.md`: invoke `/configure-agents` first. It checks the relevant documentation for all five provisioned tools and ensures the change is expressed correctly in every format before any file is touched. A PreToolUse hook (`extensions/hooks/configure-agents-reminder.sh`) nudges this on every Edit/Write/MultiEdit into those paths, but the rule applies whether or not the hook fires.
 
 ## Terminal integration
 
@@ -212,7 +212,7 @@ How to create one, per agent:
 | Agent | Mechanism |
 |---|---|
 | Claude Code | Use the native `EnterWorktree` tool. If the `superpowers` plugin is enabled, follow `superpowers:using-git-worktrees`. |
-| OpenCode / Gemini / Codex / Cursor | Manual fallback: `git worktree add .worktrees/<branch> -b <branch>` then `cd` in. |
+| OpenCode / agy / Codex / Cursor | Manual fallback: `git worktree add .worktrees/<branch> -b <branch>` then `cd` in. |
 
 Directory: `.worktrees/` at the repo root. Ignored globally by `setup.sh`, so no per-repo `.gitignore` change is needed.
 
@@ -233,4 +233,4 @@ When initializing a new repository or starting a new project, your FIRST action 
 
 The `AGENTS.md` symlink is dual-purpose: Codex and Cursor both read it from the project root, so no fifth symlink is needed for Cursor.
 
-This guarantees that Claude, OpenCode, Gemini, Codex, and Cursor all share the exact same operational context from day one without any configuration drift.
+This guarantees that Claude, OpenCode, agy, Codex, and Cursor all share the exact same operational context from day one without any configuration drift. `agy` discovers the project-level `GEMINI.md` or `AGENTS.md` symlink while walking up from its working directory.

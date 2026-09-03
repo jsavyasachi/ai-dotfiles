@@ -1,12 +1,12 @@
 # ai-dotfiles
 
-Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, Gemini CLI, Codex, and Cursor.
+Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Cursor.
 
 ## Stack
 
 <a href="https://anthropic.com"><img src="https://img.shields.io/badge/Claude_Code-7C4DFF?style=flat&logo=anthropic&logoColor=white" alt="Claude Code" /></a>
 <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-000000?style=flat&logo=openai&logoColor=white" alt="OpenCode" /></a>
-<a href="https://google.com"><img src="https://img.shields.io/badge/Gemini_CLI-4285F4?style=flat&logo=google&logoColor=white" alt="Gemini CLI" /></a>
+<a href="https://antigravity.google/"><img src="https://img.shields.io/badge/Antigravity_CLI-4285F4?style=flat&logo=google&logoColor=white" alt="Antigravity CLI" /></a>
 <a href="https://developers.openai.com/codex"><img src="https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white" alt="Codex" /></a>
 <a href="https://cursor.com"><img src="https://img.shields.io/badge/Cursor-000000?style=flat&logo=cursor&logoColor=white" alt="Cursor" /></a>
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
@@ -25,7 +25,7 @@ Idempotent: safe to re-run after pulling updates.
 
 ## What You Get
 
-**Universal instructions**: `instructions/AI.md` is the canonical source. `instructions/{CLAUDE,OPENCODE,GEMINI,AGENTS}.md` are symlinks to it, and `setup.sh` installs those into each agent's home. Cursor consumes `AGENTS.md` per repo; global Cursor User Rules still require a one-time paste into Settings > Rules.
+**Universal instructions**: `instructions/AI.md` is the canonical source. `instructions/{CLAUDE,OPENCODE,GEMINI,AGENTS}.md` are symlinks to it. Claude Code, OpenCode, and Codex receive global links. `agy` discovers project-level `GEMINI.md` or `AGENTS.md` while walking up to the repository root. Cursor consumes `AGENTS.md` per repo; global Cursor User Rules still require a one-time paste into Settings > Rules.
 
 **Cross-agent commands**: canonical `.md` files live in `extensions/commands/`. `setup.sh` installs them in each tool's native shape:
 
@@ -33,7 +33,7 @@ Idempotent: safe to re-run after pulling updates.
 |---|---|
 | Claude Code | `~/.claude/commands/<name>.md` symlink |
 | OpenCode | `~/.config/opencode/commands/<name>.md` symlink + generated `skills/<name>/SKILL.md` |
-| Gemini CLI | generated `~/.gemini/commands/<name>.toml` |
+| Antigravity CLI (`agy`) | no command translation; use skills |
 | Codex | generated `~/.codex/skills/<name>/SKILL.md` |
 | Cursor | not global; per-project commands only |
 
@@ -43,7 +43,7 @@ Idempotent: safe to re-run after pulling updates.
 | `/push` | Docs/instructions audit then push |
 | `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
 
-**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and Gemini native skill dirs. Cursor has no global skills path. The `codex` skill delegates scoped work through isolated worktrees, resumable JSONL sessions, independent verification, and bounded review; the `opencode` skill delegates smaller scoped tasks to the local Ollama model with JSON event monitoring, mandatory diff verification, and one bounded repair loop. Parallel writers require separate worktrees and non-overlapping file claims.
+**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and agy's `~/.gemini/config/skills/` directory. Cursor has no global skills path. The `codex` and `agy` skills delegate scoped work through isolated worktrees, resumable sessions, independent verification, and bounded review; the `opencode` skill delegates smaller scoped tasks to the local Ollama model. Parallel writers require separate worktrees and non-overlapping file claims.
 
 **Local-model stack**: setup installs Ollama when available, starts its service, and pulls models listed in `config/local-models.txt` idempotently. OpenCode defaults to `ollama/qwen2.5-coder:14b`.
 
@@ -58,13 +58,13 @@ Idempotent: safe to re-run after pulling updates.
 | You want to change... | Edit this | How it propagates |
 |---|---|---|
 | Universal AI instructions (tone, conventions, decisions) | `instructions/AI.md` | Symlinked as `CLAUDE.md`, `OPENCODE.md`, `GEMINI.md`, `AGENTS.md` (Codex + Cursor share `AGENTS.md`). Cursor's global User Rules need a one-time manual paste into Settings > Rules. |
-| Cross-agent slash commands | `extensions/commands/<name>.md` (YAML frontmatter + Markdown body) | `setup.sh` symlinks to Claude Code/OpenCode, generates `.toml` for Gemini, generates `SKILL.md` for Codex/OpenCode. Cursor commands are per-repo only and not auto-propagated. |
+| Cross-agent slash commands | `extensions/commands/<name>.md` (YAML frontmatter + Markdown body) | `setup.sh` symlinks to Claude Code/OpenCode and generates `SKILL.md` for Codex/OpenCode. agy has no TOML command format; reusable agy commands are skills. Cursor commands are per-repo only and not auto-propagated. |
 | Hooks (Claude Code, e.g. Stop, PreToolUse) | `extensions/hooks/<name>.sh` + reference it in `config/settings.json.tpl` | The hooks dir is symlinked to `~/.claude/hooks/`; settings template is rendered to `~/.claude/settings.json` with absolute paths. |
 | Hooks (Codex) | not managed - edit `~/.codex/config.toml` directly | Codex rewrites that file itself and persists `model`, `[features]`, `[tui]`, and `[[hooks.Stop]]` on its own. A managed block re-declared those tables and TOML rejects a duplicate table, so Codex hard-failed at startup with `duplicate key`. Removed 2026-08-03. |
 | Memory (Claude Code) | `extensions/memory/MEMORY.md` and `extensions/memory/<topic>.md` | Symlinked into `~/.claude/projects/<encoded-projects-path>/memory/`. |
-| Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/`, `~/.codex/skills/`, and `~/.gemini/skills/`. Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
+| Skills (cross-agent) | `extensions/skills/<name>/SKILL.md` | Whole-dir symlink to `~/.claude/skills/`; per-skill symlink into `~/.config/opencode/skills/`, `~/.codex/skills/`, and agy's `~/.gemini/config/skills/`. Cursor has no global skills path. Third-party skills installed via `npx skills add` land here too (gitignored by default); first-party skills authored in this repo (e.g. `mermaid/`) are explicitly un-ignored in `.gitignore`. |
 | Local Ollama models | `config/local-models.txt` | `setup.sh` installs Ollama if missing (macOS/brew), starts the service, and pulls each listed model idempotently. |
-| Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths and copies Cursor MCP config. Gemini commands and skills are generated or linked from `extensions/`; this repo has no Gemini settings template, and Codex config is no longer managed. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
+| Managed settings and MCP config | `config/settings.json.tpl`, `config/opencode.json.tpl`, `config/cursor-mcp.json` | `setup.sh` renders Claude/OpenCode templates with absolute paths and copies Cursor MCP config. agy owns `~/.gemini/antigravity-cli/settings.json`, and Codex owns `~/.codex/config.toml`; neither is managed. Use `@@CLAUDE_DIR@@`, `@@OPENCODE_DIR@@`, `@@DOTFILES_DIR@@` placeholders. |
 | Ghostty settings | `config/ghostty.conf.tpl`, `config/ghostty-macos.conf.tpl` | Merged into the active Ghostty config as labeled managed blocks; existing settings remain untouched outside those blocks. |
 | Claude plugins to auto-install | `config/plugins.txt` (one plugin id per line) | `setup.sh` calls `claude plugin install` for any plugin not already installed. |
 | Status line | `scripts/statusline-command.sh` | Symlinked to Claude Code and OpenCode. |
@@ -74,7 +74,7 @@ After editing any of the above, run `bash setup.sh`. It's idempotent and prints 
 
 ## Adding a new agent
 
-Cross-agent parity work goes through the `/configure-agents` command, which fetches official docs for all 5 tools before any file is touched. See `instructions/AI.md` `## Cross-agent config` for the canonical mapping.
+Cross-agent parity work goes through the `/configure-agents` command, which checks the relevant docs for all five provisioned tools before any file is touched. See `instructions/AI.md` `## Cross-agent config` for the canonical mapping.
 
 ## Testing
 
