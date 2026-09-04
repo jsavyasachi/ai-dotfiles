@@ -147,6 +147,24 @@ EOF
 # setup.sh previously created global GEMINI.md / OUTPUT-STYLE.md symlinks and
 # ~/.gemini/{skills,commands} for Gemini CLI. agy reads none of them. Converge an
 # already-migrated machine by removing the ones this repo provably created.
+# Claude subagents are authored in extensions/agents/ and symlinked into
+# ~/.claude/agents/. No other provisioned agent shares the schema, so this is a
+# Claude-only distribution.
+test_claude_subagents_symlinked() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-agents.XXXXXX)"
+
+  run_setup "$home_dir" >/dev/null
+
+  local src found=0
+  for src in "$REPO_ROOT"/extensions/agents/*.md; do
+    [ -e "$src" ] || continue
+    found=1
+    assert_symlink_target "$home_dir/.claude/agents/$(basename "$src")" "$src"
+  done
+  [ "$found" -eq 1 ] || fail "no subagents found in extensions/agents/"
+}
+
 test_legacy_gemini_rules_removed() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-legacy-rules.XXXXXX)"
@@ -365,6 +383,7 @@ main() {
   test_codex_config_left_alone
   test_agy_settings_left_alone
   test_legacy_gemini_rules_removed
+  test_claude_subagents_symlinked
   test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check

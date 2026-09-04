@@ -6,7 +6,8 @@
 # Cursor) - they all commit through git - so it is the one choke point that
 # guards every tool at once.
 #
-# Blocks the commit if any staged SKILL.md or extensions/commands/*.md has
+# Blocks the commit if any staged SKILL.md, extensions/commands/*.md or
+# extensions/agents/*.md has
 # broken YAML frontmatter (the ': ' / ' #' footguns). Validation logic lives
 # in validate-skill-frontmatter.sh (single source of truth).
 set -euo pipefail
@@ -19,7 +20,7 @@ validator="$repo_root/extensions/hooks/validate-skill-frontmatter.sh"
 # Staged, still-present files matching our gated patterns.
 mapfile -t staged < <(
   git diff --cached --name-only --diff-filter=ACM \
-    | grep -E '(^|/)SKILL\.md$|^extensions/commands/.*\.md$' || true
+    | grep -E '(^|/)SKILL\.md$|^extensions/(commands|agents)/.*\.md$' || true
 )
 
 [[ ${#staged[@]} -gt 0 ]] || exit 0
@@ -32,7 +33,7 @@ done
 
 if ! "$validator" "${abs[@]}"; then
   echo "" >&2
-  echo "  Commit blocked: invalid SKILL.md / command frontmatter (see above)." >&2
+  echo "  Commit blocked: invalid SKILL.md / command / agent frontmatter (see above)." >&2
   echo "  Single-quote the offending description, then re-stage and commit." >&2
   echo "  Override (not recommended): git commit --no-verify" >&2
   exit 1

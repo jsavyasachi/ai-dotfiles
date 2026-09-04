@@ -412,6 +412,32 @@ done
 
 # ── Cross-agent skills: propagate extensions/skills/<name>/ ──────────────────
 #
+# ── Claude subagents: propagate extensions/agents/ ───────────────────────────
+#
+# Claude-only. OpenCode also supports markdown agents (~/.config/opencode/agents)
+# but its schema differs - it takes `prompt` and provider-prefixed model names
+# such as ollama/qwen2.5-coder:14b, where Claude takes a body and an alias like
+# `haiku` - so one shared file cannot serve both without emitting something
+# broken for one of them. agy exposes `--agent` and `agy agent` but documents no
+# definition path. Codex has no subagent primitive: `codex agents` browses
+# sessions, and its parallelism is separate `codex exec` processes.
+CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
+mkdir -p "$CLAUDE_AGENTS_DIR"
+for agent_src in "$DOTFILES_DIR"/extensions/agents/*.md; do
+  [[ -f "$agent_src" ]] || continue
+  make_symlink "$agent_src" "$CLAUDE_AGENTS_DIR/$(basename "$agent_src")"
+done
+
+# Prune subagent symlinks whose source is gone (renamed or removed upstream).
+if [[ -d "$CLAUDE_AGENTS_DIR" ]]; then
+  for entry in "$CLAUDE_AGENTS_DIR"/*; do
+    if [[ -L "$entry" && ! -e "$entry" ]]; then
+      rm -f "$entry"
+      REMOVED+=("$(basename "$entry") (stale subagent symlink)")
+    fi
+  done
+fi
+
 # extensions/skills/ is the canonical location for Claude (whole-dir symlink
 # above). Mirror each skill subdir into OpenCode, Codex, and agy skill dirs as
 # per-skill symlinks so all four agents share one source of truth.
