@@ -62,6 +62,12 @@ effort when reporting the run.
 
 ## Prompt and log storage
 
+Generate `<run-id>` fresh for every dispatch (a timestamp plus random suffix, or
+`mktemp -u`), never reuse or guess one. A pre-existing directory at the chosen
+path belongs to a different run; treating its contents, including a stale
+`conversation_id`, as this run's output produces a complete, plausible, wrong
+report with no error anywhere - it will not fail loudly.
+
 For a task that needs resume, monitoring, or audit, use:
 
 ```text

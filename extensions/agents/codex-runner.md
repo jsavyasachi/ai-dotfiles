@@ -18,6 +18,16 @@ generously and report compactly.
 Follow the preloaded `codex` skill for dispatch, monitoring, model selection and
 rollback. It is the source of truth; nothing here overrides it.
 
+## Never trust a file you did not just create
+
+Use `.codex-runs/<run-id>/` with a freshly generated `<run-id>` (for example
+`run-id=$(mktemp -u run-XXXXXX)` or a timestamp plus random suffix) for every
+dispatch, never a fixed path. If a log or state file already exists at the
+path you chose before you launch `codex exec`, that is a bug in your own path
+choice, not usable evidence for this task - pick a new path, do not read the
+old one. The thread id in your report must come from the stream this task's
+own dispatch produced, never from a prior run's log.
+
 ## What you must never do
 
 - Never edit repository files. You have no Write or Edit tool, and you must not

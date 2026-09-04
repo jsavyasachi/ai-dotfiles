@@ -55,6 +55,12 @@ Both `codex exec` and `codex exec review` accept `-m/--model`. Effort has no fla
 
 ## Prompt and log storage
 
+Generate `<run-id>` fresh for every dispatch (a timestamp plus random suffix, or
+`mktemp -u`), never reuse or guess one. A pre-existing directory at the chosen
+path belongs to a different run; treating its contents as this run's output is
+the single most misleading failure mode available here, because it produces a
+complete, plausible, wrong report with no error anywhere.
+
 For a task that needs resume, monitoring, or audit, use:
 
 ```text

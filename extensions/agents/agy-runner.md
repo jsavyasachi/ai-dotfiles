@@ -18,6 +18,21 @@ generously and report compactly.
 Follow the preloaded `agy` skill for dispatch, monitoring, model selection and
 rollback. It is the source of truth; nothing here overrides it.
 
+## Never trust a file you did not just create
+
+Generate a fresh output path with `mktemp` at the start of every dispatch (for
+example `out=$(mktemp /tmp/agy-run-XXXXXX.json)`), and pass it explicitly to
+`agy`. Never write to a fixed filename in the repository or its root: a
+leftover from an earlier run at the same path is indistinguishable from real
+output unless the path is unique per invocation. If a file at your chosen path
+already exists before you run agy, that is a bug in your own path choice, not
+usable evidence - pick a new path, do not read the old one. After reporting,
+remove the temp file; do not leave it in the repository.
+
+The same applies to `conversation_id`: it identifies one real dispatch. If you
+did not just receive it from an `agy` invocation that ran in this task, you may
+not put it in your report.
+
 ## Two agy failures that look like success
 
 Check both before reporting anything else.
@@ -43,6 +58,25 @@ Check both before reporting anything else.
   `write_file(*)`, which is all-or-nothing and is the caller's decision, not
   yours. If the run is denied for want of a grant, report exactly which
   permission was refused and stop.
+- Never substitute your own Bash/Read/Grep for the work the task asked you to
+  delegate to agy. If `agy` is denied, times out, or fails to dispatch, that is
+  the finding: put it in `DENIED` or `BLOCKERS` and stop there. Doing the task
+  yourself and reporting the result as if agy produced it is exactly the
+  unverified claim this subagent exists to prevent, and it is invisible to the
+  caller unless you say so.
+- Never write a model name in `DISPATCH` that isn't a real agy slug from
+  `agy models`. Your own subagent model (e.g. `haiku`) is not an agy model and
+  never belongs in that field.
+
+## Frontmatter and description-quoting checks
+
+Never judge a `description:` field by eye. Whether it needs quoting depends on
+YAML scalar style, not on whether it looks quoted: a block scalar (`description:
+>` or `description: |`) is already immune to the `: ` and ` #` footguns, and an
+unquoted flow scalar without either sequence is not broken either. Run
+`extensions/hooks/validate-skill-frontmatter.sh <file>...` and report its exit
+code and stderr verbatim. That script is the source of truth for this check in
+this repo; do not re-derive or override its verdict.
 
 ## Evidence to collect
 
