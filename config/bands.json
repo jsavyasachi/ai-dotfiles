@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+
+  "_doc": "Capability-band -> model routing for delegated codex/agy work. A BAND is a capability requirement with a fixed acceptance bar (see `bands`). A STANCE selects a concrete (model, effort) that still MEETS that bar - cost_first trades effort/price down but never below the band's bar; capability_first buys headroom above it. `balanced` is the canonical band set: every band a caller may request MUST exist under routes.balanced, and other stances are sparse OVERRIDES that fall back to balanced per missing cell (never across bands). claude is intentionally absent - Claude subagent effort is static frontmatter with no per-call adapter, so claude routing is an orchestrator convention (see instructions/AI.md), not resolver-enforced. agy is a SEPARATE pod with its own bands; agy.senior does NOT equal codex/main `distinguished` - never silently translate across pods.",
+
+  "bands": {
+    "codex": {
+      "distinguished": "novel or ambiguous architecture, high blast radius, correctness hard to verify by tests alone",
+      "staff": "multi-file feature with real design choices and moderate ambiguity",
+      "senior": "well-scoped feature or refactor needing some judgment",
+      "engineer": "mechanical or bounded change with an explicit spec"
+    },
+    "agy": {
+      "senior": "Gemini Pro-class: heaviest agy reasoning",
+      "engineer": "capable everyday agy work",
+      "mid": "moderate, latency-sensitive work",
+      "intern": "simple, well-specified work",
+      "layman": "trivial or best-effort work"
+    }
+  },
+
+  "defaults": { "stance": "balanced" },
+
+  "routes": {
+    "balanced": {
+      "codex": {
+        "distinguished": { "model": "gpt-6-astra",   "effort": "high"   },
+        "staff":         { "model": "gpt-5.6-sol",   "effort": "high"   },
+        "senior":        { "model": "gpt-5.6-terra", "effort": "medium" },
+        "engineer":      { "model": "gpt-5.6-luna",  "effort": "low"    }
+      },
+      "agy": {
+        "senior":   { "model": "gemini-3.1-pro-high"   },
+        "engineer": { "model": "gemini-3.8-flash-high" },
+        "mid":      { "model": "gemini-3.7-flash-medium" },
+        "intern":   { "model": "gemini-3.6-flash-low"  },
+        "layman":   { "model": "gpt-oss-120b-medium"   }
+      }
+    },
+
+    "cost_first": {
+      "codex": {
+        "distinguished": { "model": "gpt-6-astra",   "effort": "medium" },
+        "staff":         { "model": "gpt-5.6-sol",   "effort": "medium" },
+        "senior":        { "model": "gpt-5.6-terra", "effort": "low"    },
+        "engineer":      { "model": "gpt-5.4-mini",  "effort": "low"    }
+      }
+    },
+
+    "capability_first": {
+      "codex": {
+        "distinguished": { "model": "gpt-6-astra",   "effort": "high" },
+        "staff":         { "model": "gpt-6-astra",   "effort": "high" },
+        "senior":        { "model": "gpt-5.6-sol",   "effort": "high" },
+        "engineer":      { "model": "gpt-5.6-terra", "effort": "medium" }
+      }
+    }
+  }
+}
