@@ -33,7 +33,7 @@ model=""
 schema=""
 out_dir=""
 
-die() { printf 'DISPATCH FAILED: %s\n' "$*" >&2; exit "${2:-1}"; }
+die() { printf 'DISPATCH FAILED: %s\n' "$1" >&2; exit "${2:-1}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
