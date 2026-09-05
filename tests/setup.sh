@@ -302,6 +302,28 @@ test_dispatch_wrappers_on_path() {
   [[ ! -e "$home_dir/.codex/skills/agy" ]] || fail "agy delegation skill should no longer be distributed"
 }
 
+# The band -> model routing helpers must land on PATH too, and the installed
+# resolver must actually RUN through its symlink and find the real
+# config/bands.json (asserting the symlink target alone does not prove that).
+test_band_routing_helpers_on_path() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-band-path.XXXXXX)"
+
+  run_setup "$home_dir" >/dev/null
+
+  assert_symlink_target "$home_dir/.local/bin/band-resolve" "$REPO_ROOT/scripts/band-resolve.sh"
+  assert_symlink_target "$home_dir/.local/bin/codex-models" "$REPO_ROOT/scripts/codex-models.py"
+  assert_symlink_target "$home_dir/.local/bin/bands-drift" "$REPO_ROOT/scripts/bands-drift.sh"
+
+  # Execute the installed symlink from an unrelated cwd; it must resolve its own
+  # real path, read the shipped bands.json, and emit a JSON model for a real band.
+  local out model
+  out="$(cd / && "$home_dir/.local/bin/band-resolve" --backend codex --band staff)" \
+    || fail "installed band-resolve did not run"
+  model="$(printf '%s' "$out" | jq -r '.model')"
+  [[ -n "$model" && "$model" != "null" ]] || fail "installed band-resolve returned no model: $out"
+}
+
 test_opencode_delegation_skill() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-opencode-skill.XXXXXX)"
@@ -387,6 +409,7 @@ main() {
   test_cross_agent_commands
   test_dirty_tree_check
   test_dispatch_wrappers_on_path
+  test_band_routing_helpers_on_path
   test_opencode_delegation_skill
   test_gemini_artifact_cleanup_preserves_user_content
   test_backup_of_conflicting_files

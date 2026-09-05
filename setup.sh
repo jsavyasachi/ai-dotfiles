@@ -447,6 +447,18 @@ mkdir -p "$LOCAL_BIN_DIR"
 make_symlink "$DOTFILES_DIR/scripts/agy-dispatch.sh" "$LOCAL_BIN_DIR/agy-dispatch"
 make_symlink "$DOTFILES_DIR/scripts/codex-dispatch.sh" "$LOCAL_BIN_DIR/codex-dispatch"
 
+# ── Band -> model routing helpers ────────────────────────────────────────────
+# Validate config/bands.json (through the checkout's absolute path) BEFORE
+# exposing the resolver that reads it, so a broken map fails setup loudly rather
+# than at dispatch time. Then put the helpers on PATH beside the wrappers.
+if ! python3 "$DOTFILES_DIR/scripts/bands-validate.py" "$DOTFILES_DIR/config/bands.json"; then
+  echo "setup: config/bands.json failed validation - aborting" >&2
+  exit 1
+fi
+make_symlink "$DOTFILES_DIR/scripts/band-resolve.sh" "$LOCAL_BIN_DIR/band-resolve"
+make_symlink "$DOTFILES_DIR/scripts/codex-models.py" "$LOCAL_BIN_DIR/codex-models"
+make_symlink "$DOTFILES_DIR/scripts/bands-drift.sh" "$LOCAL_BIN_DIR/bands-drift"
+
 # extensions/skills/ is the canonical location for Claude (whole-dir symlink
 # above). Mirror each skill subdir into OpenCode, Codex, and agy skill dirs as
 # per-skill symlinks so all four agents share one source of truth.
