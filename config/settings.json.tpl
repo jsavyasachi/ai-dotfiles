@@ -24,6 +24,10 @@
     "command": "bash @@CLAUDE_DIR@@/statusline-command.sh"
   },
   "outputStyle": "ai-dotfiles",
+  "enableArtifact": false,
+  "deniedMcpServers": [
+    "claude-in-chrome"
+  ],
   "terminalProgressBarEnabled": true,
   "preferredNotifChannel": "ghostty",
   "hooks": {
