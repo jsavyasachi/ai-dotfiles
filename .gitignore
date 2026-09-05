@@ -44,3 +44,6 @@ extensions/skills/*
 
 # private AI memory - never public (symlinked from ~/.claude)
 extensions/memory/
+
+# Python bytecode from py_compile lint
+__pycache__/
