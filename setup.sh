@@ -438,6 +438,15 @@ if [[ -d "$CLAUDE_AGENTS_DIR" ]]; then
   done
 fi
 
+# ── Delegation dispatch wrappers: put on PATH ────────────────────────────────
+# The codex/agy subagents call these deterministic wrappers by bare name from
+# whatever repo they run in, so the wrappers live on PATH beside the codex/agy
+# binaries, not only inside this checkout.
+LOCAL_BIN_DIR="$HOME/.local/bin"
+mkdir -p "$LOCAL_BIN_DIR"
+make_symlink "$DOTFILES_DIR/scripts/agy-dispatch.sh" "$LOCAL_BIN_DIR/agy-dispatch"
+make_symlink "$DOTFILES_DIR/scripts/codex-dispatch.sh" "$LOCAL_BIN_DIR/codex-dispatch"
+
 # extensions/skills/ is the canonical location for Claude (whole-dir symlink
 # above). Mirror each skill subdir into OpenCode, Codex, and agy skill dirs as
 # per-skill symlinks so all four agents share one source of truth.

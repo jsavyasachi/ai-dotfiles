@@ -284,23 +284,22 @@ test_dirty_tree_check() {
   assert_eq "$dirty_output" "[ai-dotfiles] working tree dirty at session end - consider /commit" "dirty repo warning mismatch"
 }
 
-test_codex_orchestration_skill() {
+# The codex/agy delegation skills were removed in favour of Claude subagents
+# (extensions/agents/codex.md, agy.md) that dispatch through the deterministic
+# agy-dispatch/codex-dispatch wrappers. Those wrappers must land on PATH so the
+# subagents can call them by bare name from any repo.
+test_dispatch_wrappers_on_path() {
   local home_dir
-  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-codex-skill.XXXXXX)"
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-dispatch-path.XXXXXX)"
 
   run_setup "$home_dir" >/dev/null
 
-  local skill_dir="$home_dir/.codex/skills/codex"
-  assert_exists "$skill_dir/SKILL.md"
-  assert_exists "$skill_dir/references/execution.md"
-  assert_exists "$skill_dir/references/review.md"
-  assert_exists "$skill_dir/references/parallelism.md"
-  assert_exists "$skill_dir/templates/task-prompt.md"
-  assert_file_contains "$skill_dir/SKILL.md" 'Capture the baseline before dispatch'
-  assert_file_contains "$skill_dir/SKILL.md" 'codex exec resume'
-  # shellcheck disable=SC2016 # Backticks are literal Markdown code delimiters.
-  assert_file_contains "$skill_dir/SKILL.md" 'Never use `git checkout -- .`'
-  assert_file_contains "$skill_dir/references/review.md" 'Treat agent narration as a claim'
+  assert_symlink_target "$home_dir/.local/bin/agy-dispatch" "$REPO_ROOT/scripts/agy-dispatch.sh"
+  assert_symlink_target "$home_dir/.local/bin/codex-dispatch" "$REPO_ROOT/scripts/codex-dispatch.sh"
+
+  # The delegation skills are gone; setup.sh must not recreate them anywhere.
+  [[ ! -e "$home_dir/.codex/skills/codex" ]] || fail "codex delegation skill should no longer be distributed"
+  [[ ! -e "$home_dir/.codex/skills/agy" ]] || fail "agy delegation skill should no longer be distributed"
 }
 
 test_opencode_delegation_skill() {
@@ -387,7 +386,7 @@ main() {
   test_terminal_merges_preserve_local_state
   test_cross_agent_commands
   test_dirty_tree_check
-  test_codex_orchestration_skill
+  test_dispatch_wrappers_on_path
   test_opencode_delegation_skill
   test_gemini_artifact_cleanup_preserves_user_content
   test_backup_of_conflicting_files
