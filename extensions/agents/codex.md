@@ -29,10 +29,26 @@ codex-dispatch --prompt-file <file> --model <slug> \
 Render the prompt to a file first (never interpolate prompt text into the
 command). Use `--sandbox read-only` for investigation and review,
 `workspace-write` for a write task; dispatch non-trivial writes into a
-dedicated worktree via `--cwd`. Pick `<slug>`/`--effort` by task shape from
-`codex debug models`: cheap/low for mechanical work, mid for standard scope,
-strong/high for ambiguous work or independent review. Tier on what remains
-uncertain, not on how big the original feature was.
+dedicated worktree via `--cwd`.
+
+Do not hand-pick a `<slug>`/`--effort`. The caller names a **band**
+(`distinguished` | `staff` | `senior` | `engineer`) and optionally a **stance**
+(`balanced` | `cost_first` | `capability_first`); resolve the concrete
+model+effort with `band-resolve` (on PATH) and parse its JSON with `jq` - never
+`eval` its output, never invent a slug:
+
+```
+route="$(band-resolve --backend codex --band <band> --stance <stance>)" \
+  || { echo "DISPATCH FAILED: band-resolve: $route"; exit 0; }
+model="$(printf '%s' "$route" | jq -r .model)"
+effort="$(printf '%s' "$route" | jq -r '.effort // "medium"')"
+codex-dispatch --prompt-file <file> --model "$model" --effort "$effort" ...
+```
+
+If the caller instead gives an explicit slug, pass it through verbatim. The band
+already encodes the tier decision (capability bar) and the stance the cost
+posture - you do not re-judge either. (Choosing the reviewer's family for
+vendor diversity is the orchestrator's call, not yours.)
 
 The wrapper decides success for you:
 

@@ -27,10 +27,24 @@ agy-dispatch --prompt-file <file> --model <slug> \
 
 Render the prompt to a file first (never interpolate prompt text into the
 command). Use `--mode plan` for investigation and review, `--mode accept-edits`
-for a write. Pick `<slug>` from `agy models` by task shape: flash-class/low for
-mechanical work, flash-class/medium for standard scope, pro-class/high for
-ambiguous investigation or independent review. Tier on what remains uncertain,
-not on how big the original feature was.
+for a write.
+
+Do not hand-pick a `<slug>`. The caller names a band in the **agy pod**
+(`senior` | `engineer` | `mid` | `intern` | `layman` - separate from the main
+codex ladder, do not equate them); resolve the concrete slug with `band-resolve`
+and parse its JSON with `jq` - never `eval` its output. agy bakes effort into
+the slug, so there is no separate `--effort`:
+
+```
+route="$(band-resolve --backend agy --band <band>)" \
+  || { echo "DISPATCH FAILED: band-resolve: $route"; exit 0; }
+model="$(printf '%s' "$route" | jq -r .model)"
+agy-dispatch --prompt-file <file> --model "$model" ...
+```
+
+If the caller gives an explicit slug, pass it through verbatim. agy-dispatch
+still fail-closed-validates the slug against the live `agy models` catalog - that
+dispatch-time check stays the authority, so you do not pre-validate here.
 
 The wrapper decides success for you:
 
