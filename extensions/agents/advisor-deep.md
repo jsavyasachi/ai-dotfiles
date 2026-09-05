@@ -1,6 +1,6 @@
 ---
 name: advisor-deep
-description: 'Give a considered opinion on a plan before it is dispatched to codex-runner or agy-runner, for tasks that are ambiguous, high-stakes, cross-cutting, or where multiple reasonable approaches exist. Use instead of advisor-quick when the decision itself is the hard part, not just the plan review. Returns advice, never a verdict you must follow.'
+description: 'Give a considered opinion on a plan before it is dispatched to the codex or agy subagent, for tasks that are ambiguous, high-stakes, cross-cutting, or where multiple reasonable approaches exist. Use instead of advisor-quick when the decision itself is the hard part, not just the plan review. Returns advice, never a verdict you must follow.'
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

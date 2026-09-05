@@ -1,6 +1,6 @@
 ---
 name: advisor-quick
-description: 'Give a fast go/no-go opinion on a plan before it is dispatched to codex-runner or agy-runner. Use for a straightforward non-trivial task where the plan is already fairly clear and you mainly want a second opinion before committing tokens to it. For an ambiguous, high-stakes, or multi-option decision, use advisor-deep instead. Returns advice, never a verdict you must follow.'
+description: 'Give a fast go/no-go opinion on a plan before it is dispatched to the codex or agy subagent. Use for a straightforward non-trivial task where the plan is already fairly clear and you mainly want a second opinion before committing tokens to it. For an ambiguous, high-stakes, or multi-option decision, use advisor-deep instead. Returns advice, never a verdict you must follow.'
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: low
