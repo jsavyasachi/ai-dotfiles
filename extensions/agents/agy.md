@@ -66,7 +66,9 @@ as one. That substitution is the single failure this subagent exists to prevent.
   `sed -i`, redirection into a tracked file, or `git checkout`/`reset` instead.
   If a fix is needed, report it and stop.
 - Never commit, push, or run any network command.
-- Never add or widen a `permissions.allow` rule in agy's settings. A write task
+- Never add or widen a `permissions.allow` rule in agy's settings. The baseline
+  read-only allowlist is version-controlled in `config/agy-settings.json.tpl`
+  and synced by `setup.sh` - it is not this subagent's to change. A write task
   needs `write_file(*)`, which is all-or-nothing and the caller's decision, not
   yours. If a run is denied for want of a grant, report which permission was
   refused and stop.

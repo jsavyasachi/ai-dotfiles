@@ -141,7 +141,7 @@ This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Curs
 
 | Capability | Claude Code | OpenCode | Antigravity CLI (`agy`) | Codex | Cursor |
 |---|---|---|---|---|---|
-| Settings | `settings.json` | `opencode.json` | not managed - agy owns `~/.gemini/antigravity-cli/settings.json` | `config.toml` | Cursor Settings UI (no file) |
+| Settings | `settings.json` | `opencode.json` | partially managed - `config/agy-settings.json.tpl` merges `permissions.allow`/`enableTelemetry` into `~/.gemini/antigravity-cli/settings.json`; agy owns `model`/`trustedWorkspaces` | `config.toml` | Cursor Settings UI (no file) |
 | Instructions | `CLAUDE.md` | `OPENCODE.md` | `GEMINI.md` or `AGENTS.md` (per-repo) | `AGENTS.md` | `AGENTS.md` (per-repo); User Rules via Settings (global) |
 | Slash commands | `commands/` (.md) | `commands/` (.md) | - (use skills) | - (use skills) | `.cursor/commands/` (.md, per-repo) |
 | Skills | `skills/` | `skills/` | `~/.gemini/config/skills/` | `~/.codex/skills/` | - |
@@ -149,6 +149,8 @@ This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Curs
 | Subagents | `agents/` (.md) | `agents/` (.md, different schema - not wired) | `--agent` (no documented definition path) | - (no subagent primitive) | - |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
+
+agy's settings.json is a scoped exception to "own the whole file yourself": `scripts/sync-agy-settings.sh` deep-merges `config/agy-settings.json.tpl` (the read-only command allowlist and `enableTelemetry`) into `~/.gemini/antigravity-cli/settings.json` on every `setup.sh` run, but any key the template does not define - `model`, `trustedWorkspaces`, anything agy adds later - passes through byte-identical. A full-file overwrite was rejected earlier because agy rewrites those runtime keys itself (see DECISIONS.md 2026-09-07); the allowlist is different - it is curated, security-relevant config that belongs in git, not agy's live state.
 
 ### Output style
 

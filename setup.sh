@@ -572,8 +572,24 @@ sync_settings() {
 
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
 sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
-# ~/.gemini/antigravity-cli/settings.json is intentionally not managed. agy
-# rewrites it and owns its model, permissions, and trusted-workspace state.
+
+# ~/.gemini/antigravity-cli/settings.json is agy's own file - it rewrites model
+# and trustedWorkspaces at runtime, so those keys are never touched here. Only
+# the read-only command allowlist and enableTelemetry are managed, via a scoped
+# deep-merge (config/agy-settings.json.tpl) rather than a full overwrite, so
+# agy's runtime state survives every setup.sh run (see DECISIONS.md 2026-09-07).
+AGY_SETTINGS_DEST="$AGY_ROOT/antigravity-cli/settings.json"
+AGY_SETTINGS_BEFORE="$(cat "$AGY_SETTINGS_DEST" 2>/dev/null || true)"
+if "$DOTFILES_DIR/scripts/sync-agy-settings.sh" "$DOTFILES_DIR/config/agy-settings.json.tpl" "$AGY_SETTINGS_DEST"; then
+  if [[ "$(cat "$AGY_SETTINGS_DEST")" == "$AGY_SETTINGS_BEFORE" ]]; then
+    SKIPPED+=("antigravity-cli/settings.json (already up to date)")
+  else
+    MERGED+=("antigravity-cli/settings.json")
+  fi
+else
+  warn "agy settings merge failed"
+fi
+
 # ~/.codex/config.toml is intentionally NOT managed (removed 2026-08-03). Codex
 # rewrites that file itself and now persists model, [features], [tui], and the
 # Stop hook on its own. A merged block re-declared those tables, and TOML rejects

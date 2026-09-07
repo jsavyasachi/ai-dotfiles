@@ -79,7 +79,8 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.claude/settings.json" '"outputStyle": "ai-dotfiles"'
   assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'keep-coding-instructions: true'
   assert_file_contains "$home_dir/.claude/output-styles/ai-dotfiles.md" 'Write using ASD-STE100 Simplified Technical English.'
-  [[ ! -e "$home_dir/.gemini/antigravity-cli/settings.json" ]] || fail "setup should not create agy settings"
+  assert_file_contains "$home_dir/.gemini/antigravity-cli/settings.json" '"enableTelemetry": false'
+  assert_file_contains "$home_dir/.gemini/antigravity-cli/settings.json" '"command(rg)"'
   [[ ! -e "$home_dir/.gemini/settings.json" ]] || fail "setup should not create Gemini CLI settings"
   [[ ! -e "$home_dir/.gemini/commands" ]] || fail "setup should not create Gemini CLI commands"
   [[ ! -e "$home_dir/.gemini/skills" ]] || fail "setup should not create Gemini CLI skills"
@@ -142,8 +143,9 @@ EOF
   assert_eq "$(grep -c 'ai-dotfiles managed: codex config' "$home_dir/.codex/config.toml" || true)" "0" "codex config must not be managed"
 }
 
-# agy owns and rewrites this file, including permissions, model selection, and
-# trusted workspaces. setup.sh must leave existing agy state byte-identical.
+# agy owns and rewrites this file's model and trustedWorkspaces at runtime, so
+# setup.sh must never touch those keys - see test_agy_settings_scoped_merge
+# below for what IS managed (permissions.allow, enableTelemetry).
 # setup.sh previously created global GEMINI.md / OUTPUT-STYLE.md symlinks and
 # ~/.gemini/{skills,commands} for Gemini CLI. agy reads none of them. Converge an
 # already-migrated machine by removing the ones this repo provably created.
@@ -185,7 +187,7 @@ test_legacy_gemini_rules_removed() {
   [[ -L "$home_dir/.gemini/user-owned.md" ]] || fail "must not remove symlinks this repo did not create"
 }
 
-test_agy_settings_left_alone() {
+test_agy_settings_scoped_merge() {
   local home_dir
   home_dir="$(mktemp -d /tmp/ai-dotfiles-test-agy-settings.XXXXXX)"
 
@@ -193,12 +195,16 @@ test_agy_settings_left_alone() {
   cat > "$home_dir/.gemini/antigravity-cli/settings.json" <<'EOF'
 {"enableTelemetry":false,"model":"Claude Opus 4.6 (Thinking)","trustedWorkspaces":["/Users/savya/projects"],"permissions":{"allow":["command(*)"]}}
 EOF
-  local before
-  before="$(cat "$home_dir/.gemini/antigravity-cli/settings.json")"
 
   run_setup "$home_dir" >/dev/null
 
-  assert_eq "$(cat "$home_dir/.gemini/antigravity-cli/settings.json")" "$before" "setup.sh must not modify agy settings"
+  local dest="$home_dir/.gemini/antigravity-cli/settings.json"
+  assert_eq "$(jq -r '.model' "$dest")" "Claude Opus 4.6 (Thinking)" "setup.sh must not touch agy's model"
+  assert_eq "$(jq -c '.trustedWorkspaces' "$dest")" '["/Users/savya/projects"]' "setup.sh must not touch trustedWorkspaces"
+  assert_eq "$(jq -r '.enableTelemetry' "$dest")" "false" "enableTelemetry should be managed"
+  assert_file_contains "$dest" '"command(rg)"'
+  [[ "$(jq -c '.permissions.allow' "$dest")" != '["command(*)"]' ]] \
+    || fail "the repo allowlist should have replaced the stale command(*) rule"
 }
 
 test_terminal_merges_preserve_local_state() {
@@ -402,7 +408,7 @@ main() {
   test_local_models
   test_idempotent_rerun
   test_codex_config_left_alone
-  test_agy_settings_left_alone
+  test_agy_settings_scoped_merge
   test_legacy_gemini_rules_removed
   test_claude_subagents_symlinked
   test_terminal_merges_preserve_local_state
