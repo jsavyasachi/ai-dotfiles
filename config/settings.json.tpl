@@ -26,7 +26,7 @@
   "outputStyle": "ai-dotfiles",
   "enableArtifact": false,
   "deniedMcpServers": [
-    "claude-in-chrome"
+    { "serverName": "claude-in-chrome" }
   ],
   "terminalProgressBarEnabled": true,
   "preferredNotifChannel": "ghostty",
