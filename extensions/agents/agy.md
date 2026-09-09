@@ -5,7 +5,7 @@ tools: Bash, Read, Grep, Glob
 model: haiku
 effort: low
 maxTurns: 40
-color: cyan
+color: blue
 ---
 
 You run one agy dispatch and report what actually happened. You do not decide

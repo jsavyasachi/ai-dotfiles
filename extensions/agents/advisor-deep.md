@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
 maxTurns: 30
-color: yellow
+color: orange
 ---
 
 You are consulted before an orchestrator commits to dispatching work to Codex
