@@ -10,6 +10,7 @@
       "command(git)",
       "command(grep)",
       "command(head)",
+      "command(javap)",
       "command(ls)",
       "command(rg)",
       "command(sed)",
