@@ -25,9 +25,9 @@
     "balanced": {
       "codex": {
         "distinguished": { "model": "gpt-6-astra",   "effort": "high"   },
-        "staff":         { "model": "gpt-5.6-sol",   "effort": "high"   },
+        "staff":         { "model": "gpt-6-sol",     "effort": "high"   },
         "senior":        { "model": "gpt-5.6-terra", "effort": "medium" },
-        "engineer":      { "model": "gpt-5.6-luna",  "effort": "low"    }
+        "engineer":      { "model": "gpt-6-luna",    "effort": "low"    }
       },
       "agy": {
         "senior":   { "model": "gemini-3.1-pro-high"   },
@@ -41,9 +41,8 @@
     "cost_first": {
       "codex": {
         "distinguished": { "model": "gpt-6-astra",   "effort": "medium" },
-        "staff":         { "model": "gpt-5.6-sol",   "effort": "medium" },
-        "senior":        { "model": "gpt-5.6-terra", "effort": "low"    },
-        "engineer":      { "model": "gpt-5.4-mini",  "effort": "low"    }
+        "staff":         { "model": "gpt-6-sol",     "effort": "medium" },
+        "senior":        { "model": "gpt-5.6-terra", "effort": "low"    }
       }
     },
 
@@ -51,7 +50,7 @@
       "codex": {
         "distinguished": { "model": "gpt-6-astra",   "effort": "high" },
         "staff":         { "model": "gpt-6-astra",   "effort": "high" },
-        "senior":        { "model": "gpt-5.6-sol",   "effort": "high" },
+        "senior":        { "model": "gpt-6-sol",     "effort": "high" },
         "engineer":      { "model": "gpt-5.6-terra", "effort": "medium" }
       }
     }

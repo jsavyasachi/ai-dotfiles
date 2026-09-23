@@ -112,7 +112,7 @@ printf '%s' "$out" | jq -e . >/dev/null 2>&1 || fail "11: output not valid JSON:
 ln -s "$RESOLVE" "$WORK/band-resolve"
 out="$(cd / && "$WORK/band-resolve" --backend codex --band staff)" \
   || fail "12: symlinked invocation failed: exit $?"
-[[ "$(j "$out" .model)" == "gpt-5.6-sol" ]] || fail "12 model from real config: $out"
+[[ "$(j "$out" .model)" == "gpt-6-sol" ]] || fail "12 model from real config: $out"
 
 # 13. Path with spaces in the bands-file location.
 SP="$WORK/dir with spaces"
