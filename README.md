@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Cursor.
+Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, Cursor, and Pi.
 
 ## Stack
 
@@ -9,6 +9,7 @@ Cross-machine, cross-agent AI harness configuration for Claude Code, OpenCode, A
 <a href="https://antigravity.google/"><img src="https://img.shields.io/badge/Antigravity_CLI-4285F4?style=flat&logo=google&logoColor=white" alt="Antigravity CLI" /></a>
 <a href="https://developers.openai.com/codex"><img src="https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white" alt="Codex" /></a>
 <a href="https://cursor.com"><img src="https://img.shields.io/badge/Cursor-000000?style=flat&logo=cursor&logoColor=white" alt="Cursor" /></a>
+<a href="https://pi.dev"><img src="https://img.shields.io/badge/Pi-FF6B35?style=flat&logo=pi&logoColor=white" alt="Pi" /></a>
 <a href="https://www.gnu.org/software/bash/"><img src="https://img.shields.io/badge/Bash-4EAA25?style=flat&logo=gnubash&logoColor=white" alt="Bash" /></a>
 <a href="https://ghostty.org"><img src="https://img.shields.io/badge/Ghostty-3551F3?style=flat&logo=ghostty&logoColor=white" alt="Ghostty" /></a>
 <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-000000?style=flat&logo=ollama&logoColor=white" alt="Ollama" /></a>
@@ -27,7 +28,7 @@ Idempotent: safe to re-run after pulling updates.
 
 **Universal instructions**: `instructions/AI.md` is the canonical source. `instructions/{CLAUDE,OPENCODE,GEMINI,AGENTS}.md` are symlinks to it. Claude Code, OpenCode, and Codex receive global links. `agy` discovers project-level `GEMINI.md` or `AGENTS.md` while walking up to the repository root. Cursor consumes `AGENTS.md` per repo; global Cursor User Rules still require a one-time paste into Settings > Rules.
 
-**Cross-agent commands**: canonical `.md` files live in `extensions/commands/`. `setup.sh` installs them in each tool's native shape:
+**Cross-agent commands**: canonical `.md` files live in `extensions/commands/`. `setup.sh` installs them in each tool's native shape, including Pi prompt templates:
 
 | Agent | Install format |
 |---|---|
@@ -41,9 +42,9 @@ Idempotent: safe to re-run after pulling updates.
 |---|---|
 | `/commit` | Commit current logical unit (Conventional Commits) |
 | `/push` | Docs/instructions audit then push |
-| `/configure-agents` | Fetch official docs for all 5 tools, propose + apply a cross-agent settings change |
+| `/configure-agents` | Fetch official docs for all 6 tools, propose + apply a cross-agent settings change |
 
-**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, and agy's `~/.gemini/config/skills/` directory. Cursor has no global skills path. The `opencode` skill delegates smaller scoped tasks to the local Ollama model. Delegation to Codex and agy is not a skill: it runs through the `codex`/`agy` Claude subagents and the `codex-dispatch`/`agy-dispatch` wrappers (see **Delegation** below).
+**Cross-agent skills**: first-party skills live in `extensions/skills/<name>/`. `setup.sh` symlinks them into Claude Code, OpenCode, Codex, agy, and Pi. Cursor has no global skills path. The `opencode` skill delegates smaller scoped tasks to the local Ollama model. Delegation to Codex and agy is not a skill: it runs through the `codex`/`agy` Claude subagents and the `codex-dispatch`/`agy-dispatch` wrappers (see **Delegation** below).
 
 **Local-model stack**: setup installs Ollama when available, starts its service, and pulls models listed in `config/local-models.txt` idempotently. OpenCode defaults to `ollama/qwen2.5-coder:14b`.
 
@@ -82,7 +83,7 @@ After editing any of the above, run `bash setup.sh`. It's idempotent and prints 
 
 ## Adding a new agent
 
-Cross-agent parity work goes through the `/configure-agents` command, which checks the relevant docs for all five provisioned tools before any file is touched. See `instructions/AI.md` `## Cross-agent config` for the canonical mapping.
+Cross-agent parity work goes through the `/configure-agents` command, which checks the relevant docs for all six provisioned tools before any file is touched. See `instructions/AI.md` `## Cross-agent config` for the canonical mapping.
 
 ## Testing
 
