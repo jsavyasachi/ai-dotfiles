@@ -403,6 +403,30 @@ test_backup_handles_same_named_targets() {
   assert_file_contains "$backup_dir/.gemini/config/skills/tdd/SKILL.md" 'agy copy'
 }
 
+# Pi (earendil-works/pi) reads ~/.pi/agent/{AGENTS.md,APPEND_SYSTEM.md,skills,prompts}
+# and ~/.agents/skills. It rewrites its own settings.json, so that stays unmanaged.
+test_pi_wiring() {
+  local home_dir
+  home_dir="$(mktemp -d /tmp/ai-dotfiles-test-pi.XXXXXX)"
+
+  # A skill already provided through ~/.agents/skills must not be duplicated
+  # into Pi's own dir (Pi warns on name collisions), and a dangling symlink
+  # left in Pi's skills dir is pruned like every other agent's.
+  mkdir -p "$home_dir/.agents/skills/tdd" "$home_dir/.pi/agent/skills"
+  ln -s ../../../.agents/skills/gone "$home_dir/.pi/agent/skills/gone"
+
+  run_setup "$home_dir" >/dev/null
+
+  local pi_dir="$home_dir/.pi/agent"
+  assert_symlink_target "$pi_dir/AGENTS.md" "$REPO_ROOT/instructions/AGENTS.md"
+  assert_symlink_target "$pi_dir/APPEND_SYSTEM.md" "$REPO_ROOT/instructions/OUTPUT-STYLE.md"
+  assert_symlink_target "$pi_dir/skills/mermaid" "$REPO_ROOT/extensions/skills/mermaid"
+  assert_symlink_target "$pi_dir/prompts/commit.md" "$REPO_ROOT/extensions/commands/commit.md"
+  [[ ! -e "$pi_dir/skills/tdd" && ! -L "$pi_dir/skills/tdd" ]] || fail "skill already in ~/.agents/skills must not be linked into Pi"
+  [[ ! -L "$pi_dir/skills/gone" ]] || fail "dangling Pi skill symlink should be pruned"
+  [[ ! -e "$pi_dir/settings.json" ]] || fail "setup must not create Pi settings.json"
+}
+
 main() {
   test_fresh_install
   test_local_models
@@ -416,6 +440,7 @@ main() {
   test_dirty_tree_check
   test_dispatch_wrappers_on_path
   test_band_routing_helpers_on_path
+  test_pi_wiring
   test_opencode_delegation_skill
   test_gemini_artifact_cleanup_preserves_user_content
   test_backup_of_conflicting_files

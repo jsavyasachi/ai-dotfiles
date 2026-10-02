@@ -137,7 +137,7 @@ loaded into every session.
 
 ## Cross-agent config
 
-This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, and Cursor. When updating settings, update analogues too:
+This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, Cursor, and Pi. When updating settings, update analogues too (Pi is described below the table):
 
 | Capability | Claude Code | OpenCode | Antigravity CLI (`agy`) | Codex | Cursor |
 |---|---|---|---|---|---|
@@ -152,6 +152,8 @@ Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md`
 
 agy's settings.json is a scoped exception to "own the whole file yourself": `scripts/sync-agy-settings.sh` deep-merges `config/agy-settings.json.tpl` (the read-only command allowlist and `enableTelemetry`) into `~/.gemini/antigravity-cli/settings.json` on every `setup.sh` run, but any key the template does not define - `model`, `trustedWorkspaces`, anything agy adds later - passes through byte-identical. A full-file overwrite was rejected earlier because agy rewrites those runtime keys itself (see DECISIONS.md 2026-09-07); the allowlist is different - it is curated, security-relevant config that belongs in git, not agy's live state.
 
+Pi (`earendil-works/pi`) is wired through its own agent dir, `~/.pi/agent/`: `AGENTS.md` (instructions), `APPEND_SYSTEM.md` (the output style, its native system-prompt slot), `skills/` (per-skill symlinks, skipping any skill `~/.agents/skills` already provides, since Pi reads that dir too and warns on name collisions), and `prompts/` (`extensions/commands/*.md` become `/<name>` commands). Pi's `settings.json` is unmanaged because Pi rewrites it. Pi has no subagent or hook primitive, but the `agy-dispatch`/`codex-dispatch` wrappers on `PATH` work from it (see DECISIONS.md 2026-10-02).
+
 ### Output style
 
 `instructions/OUTPUT-STYLE.md` (Tone, Conciseness, ASD-STE100) is a separate
@@ -164,6 +166,7 @@ competing with ordinary CLAUDE.md/AGENTS.md text for the model's attention:
 - **OpenCode**: `config/opencode.json.tpl`'s `instructions` array lists `OUTPUT-STYLE.md` alongside `OPENCODE.md` - OpenCode concatenates every listed file.
 - **Antigravity CLI (`agy`)**: no automated global output-style path. It discovers project `GEMINI.md` and `AGENTS.md` files while walking to the repository root; the AI Nativity symlinks provide those project rules.
 - **Codex**: no automated path. Codex reads one `AGENTS.md` with no multi-file or import syntax, and `~/.codex/config.toml` is intentionally unmanaged (see `Decisions`), so a managed `developer_instructions` key can't be templated in safely. To opt in manually, add `developer_instructions = "instructions/OUTPUT-STYLE.md"` (absolute path) to your own `~/.codex/config.toml`.
+- **Pi**: `setup.sh` symlinks it as `~/.pi/agent/APPEND_SYSTEM.md`, Pi's native add-to-system-prompt slot.
 - **Cursor**: no automated path. Paste `instructions/OUTPUT-STYLE.md` into Settings > Rules alongside `AI.md`, same manual, once-per-machine step as the rest of Cursor's global rules.
 
 Cross-agent slash commands (`/commit`, `/push`, `/configure-agents`) live as canonical Markdown in `extensions/commands/`. `setup.sh` symlinks them to Claude/OpenCode and transforms them into skills (`name`+`description` frontmatter) for OpenCode and Codex. `agy` has no TOML slash-command format, so commands are not translated for it; reusable agy commands must be authored as skills. Cursor's `.cursor/commands/` is per-project, not global, so commands are not propagated to Cursor today.

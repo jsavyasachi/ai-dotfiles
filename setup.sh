@@ -168,6 +168,7 @@ LEGACY_GEMINI_COMMANDS_DIR="$AGY_ROOT/commands"
 LEGACY_GEMINI_SKILLS_DIR="$AGY_ROOT/skills"
 CODEX_DIR="$HOME/.codex"
 CURSOR_DIR="$HOME/.cursor"
+PI_DIR="$HOME/.pi/agent"
 
 printf '\n\033[1mAI agent dotfiles setup\033[0m\n'
 printf 'Dotfiles: %s\n' "$DOTFILES_DIR"
@@ -175,13 +176,15 @@ printf 'Claude:   %s\n' "$CLAUDE_DIR"
 printf 'OpenCode: %s\n' "$OPENCODE_DIR"
 printf 'agy:      %s\n' "$AGY_ROOT"
 printf 'Codex:    %s\n' "$CODEX_DIR"
-printf 'Cursor:   %s\n\n' "$CURSOR_DIR"
+printf 'Cursor:   %s\n' "$CURSOR_DIR"
+printf 'Pi:       %s\n\n' "$PI_DIR"
 
 mkdir -p "$OPENCODE_DIR"
 mkdir -p "$CLAUDE_DIR"
 mkdir -p "$AGY_SKILLS_DIR"
 mkdir -p "$CODEX_DIR"
 mkdir -p "$CURSOR_DIR"
+mkdir -p "$PI_DIR/skills" "$PI_DIR/prompts"
 
 # Clean up legacy ~/.agents/skills symlink (Codex reads ~/.codex/skills/, not ~/.agents/skills/).
 LEGACY_AGENTS_SKILLS="$HOME/.agents/skills"
@@ -199,6 +202,7 @@ fi
 make_symlink "$DOTFILES_DIR/instructions/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 make_symlink "$DOTFILES_DIR/instructions/OPENCODE.md" "$OPENCODE_DIR/OPENCODE.md"
 make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
+make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$PI_DIR/AGENTS.md"
 
 # agy discovers GEMINI.md and AGENTS.md by walking from the working directory
 # to the repository root. Project-level AI Nativity symlinks provide its rules;
@@ -210,6 +214,8 @@ make_symlink "$DOTFILES_DIR/instructions/AGENTS.md" "$CODEX_DIR/AGENTS.md"
 # instructions file. See instructions/AI.md > Cross-agent config > Output style.
 
 make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$OPENCODE_DIR/OUTPUT-STYLE.md"
+# Pi: APPEND_SYSTEM.md is its native "add to the system prompt" slot.
+make_symlink "$DOTFILES_DIR/instructions/OUTPUT-STYLE.md" "$PI_DIR/APPEND_SYSTEM.md"
 
 CLAUDE_OUTPUT_STYLES_DIR="$CLAUDE_DIR/output-styles"
 mkdir -p "$CLAUDE_OUTPUT_STYLES_DIR"
@@ -410,6 +416,13 @@ for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
   write_if_changed "$CODEX_NATIVE_SKILLS_DIR/$name/SKILL.md" "$codex_out" "$name/SKILL.md (Codex)"
 done
 
+# Pi prompt templates: direct .md children of ~/.pi/agent/prompts become /<name>
+# commands, and Pi's `description` frontmatter and $ARGUMENTS match ours.
+for src in "$DOTFILES_DIR"/extensions/commands/*.md; do
+  [[ -e "$src" ]] || continue
+  make_symlink "$src" "$PI_DIR/prompts/$(basename "$src")"
+done
+
 # ── Cross-agent skills: propagate extensions/skills/<name>/ ──────────────────
 #
 # ── Claude subagents: propagate extensions/agents/ ───────────────────────────
@@ -469,13 +482,20 @@ for skill_src in "$DOTFILES_DIR"/extensions/skills/*/; do
   make_symlink "${skill_src%/}" "$OPENCODE_NATIVE_SKILLS_DIR/$skill_name"
   make_symlink "${skill_src%/}" "$CODEX_NATIVE_SKILLS_DIR/$skill_name"
   make_symlink "${skill_src%/}" "$AGY_SKILLS_DIR/$skill_name"
+  # Pi also reads ~/.agents/skills and warns on name collisions, so skip any
+  # skill that directory already provides.
+  if [[ -e "$HOME/.agents/skills/$skill_name" ]]; then
+    SKIPPED+=("$skill_name (Pi: already provided by ~/.agents/skills)")
+  else
+    make_symlink "${skill_src%/}" "$PI_DIR/skills/$skill_name"
+  fi
 done
 
 # Prune per-skill symlinks whose source no longer exists (skill renamed or
 # removed). The loop above only ever adds, so without this a rename leaves a
 # broken symlink behind in every native skills dir. Only dangling SYMLINKS are
 # removed, never real directories, so hand-installed skills are left alone.
-for native_skills_dir in "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$AGY_SKILLS_DIR"; do
+for native_skills_dir in "$OPENCODE_NATIVE_SKILLS_DIR" "$CODEX_NATIVE_SKILLS_DIR" "$AGY_SKILLS_DIR" "$PI_DIR/skills" "$PI_DIR/prompts"; do
   [[ -d "$native_skills_dir" ]] || continue
   for entry in "$native_skills_dir"/*; do
     if [[ -L "$entry" && ! -e "$entry" ]]; then
