@@ -65,8 +65,8 @@ months, and tags or names for anything longer. Other tags: `Tarabala`, `Chandrab
 
 ## Known limits (VedAstro snapshot behaviour, kept for parity)
 
-- D2 (Hora) returns the D3 sign, D5 is an unfinished stub, and D10 and higher come from a generic
-  helper. Do not read meaning into D2 or D5.
+- D2 (Hora) returns the D3 sign and D5 is an unfinished stub, so do not read meaning into either.
+  D10, D16, D20, D24, D27, D40, D45 and D60 use VedAstro's current traditional tables.
 - Combustion is never detected, and the Sun, Moon, Rahu, and Ketu are never reported retrograde.
 - Many yoga and event rules are stubs that never occur, so a missing yoga is weak evidence that it is absent.
 - The ephemeris is Moshier (accurate to about 1 arcsecond for modern dates). Treat positions within
