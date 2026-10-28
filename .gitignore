@@ -38,6 +38,7 @@ extensions/skills/*
 !extensions/skills/readme-badges/
 !extensions/skills/clojure-libs/
 !extensions/skills/opencode/
+!extensions/skills/astrologer/
 
 # macOS
 .DS_Store
