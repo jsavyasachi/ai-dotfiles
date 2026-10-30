@@ -69,5 +69,8 @@ months, and tags or names for anything longer. Other tags: `Tarabala`, `Chandrab
   D10, D16, D20, D24, D27, D40, D45 and D60 use VedAstro's current traditional tables.
 - Combustion is never detected, and the Sun, Moon, Rahu, and Ketu are never reported retrograde.
 - Many yoga and event rules are stubs that never occur, so a missing yoga is weak evidence that it is absent.
+- Gochara events apply classical Vedha (Phaladeepika XXVI.3-8), so a favourable transit blocked by a planet
+  in its Vedha house has no event. A missing event does not mean the planet is not transiting: take sign
+  ingress dates from `birth_chart` positions. Rahu and Ketu get no Vedha.
 - The ephemeris is Moshier (accurate to about 1 arcsecond for modern dates). Treat positions within
   a few arcminutes of a sign or nakshatra boundary as borderline and say so.
