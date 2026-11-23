@@ -147,12 +147,15 @@ This repo powers Claude Code, OpenCode, Antigravity CLI (`agy`), Codex, Cursor, 
 | Skills | `skills/` | `skills/` | `~/.gemini/config/skills/` | `~/.codex/skills/` | - |
 | Hooks | `settings.json` | `hooks.yaml` (plugin) | `~/.gemini/config/hooks.json` | `config.toml` `[hooks]` (unmanaged - own it directly) | `.cursor/hooks/` (per-repo, beta) |
 | Subagents | `agents/` (.md) | `agents/` (.md, different schema - not wired) | `--agent` (no documented definition path) | - (no subagent primitive) | - |
+| MCP servers | `claude mcp add -s user` (`~/.claude.json`) | `opencode.json` `mcp` | `agy mcp add` | `codex mcp add` (`config.toml`) | `~/.cursor/mcp.json` |
 
 Cursor reads `AGENTS.md` from the project root, so the same per-repo `AGENTS.md` symlink that Codex consumes also covers Cursor. Cursor's global "User Rules" live in the Cursor Settings UI, not a file we can symlink: paste `instructions/AI.md` into Settings > Rules once per machine.
 
 agy's settings.json is a scoped exception to "own the whole file yourself": `scripts/sync-agy-settings.sh` deep-merges `config/agy-settings.json.tpl` (the read-only command allowlist and `enableTelemetry`) into `~/.gemini/antigravity-cli/settings.json` on every `setup.sh` run, but any key the template does not define - `model`, `trustedWorkspaces`, anything agy adds later - passes through byte-identical. A full-file overwrite was rejected earlier because agy rewrites those runtime keys itself (see DECISIONS.md 2026-09-07); the allowlist is different - it is curated, security-relevant config that belongs in git, not agy's live state.
 
 Pi (`earendil-works/pi`) is wired through its own agent dir, `~/.pi/agent/`: `AGENTS.md` (instructions), `APPEND_SYSTEM.md` (the output style, its native system-prompt slot), `skills/` (per-skill symlinks, skipping any skill `~/.agents/skills` already provides, since Pi reads that dir too and warns on name collisions), and `prompts/` (`extensions/commands/*.md` become `/<name>` commands). Pi's `settings.json` is unmanaged because Pi rewrites it. Pi has no subagent or hook primitive, but the `agy-dispatch`/`codex-dispatch` wrappers on `PATH` work from it (see DECISIONS.md 2026-10-02).
+
+MCP servers have one source: `config/mcp-servers.json` (`{"<name>": {"url": "<streamable HTTP URL>"}}`, remote servers only). `setup.sh` calls `scripts/sync-mcp.sh`, which merges it into the rendered OpenCode (`mcp.<name>`, flat legacy shape - OpenCode 1.18 rejects V2 `mcp.servers`) and Cursor (`mcpServers.<name>`) configs, and registers it in Claude, Codex, agy and Pi through each CLI's own `mcp add` (Pi: `pi mcp add`, `~/.pi/agent/mcp.json`). The CLIs are the writers because Claude's `settings.json` cannot hold MCP servers and the other files are agent-owned. Registration is additive: removing an entry does not deregister it - run `<agent> mcp remove <name>` per agent. OAuth sign-in is per agent and manual, once: Claude `/mcp`, Codex `codex mcp login <name>`, OpenCode `opencode mcp auth <name>`, Pi `pi mcp login <name>`; agy and Cursor prompt on first use. Add any new MCP server here, never with a one-off `mcp add` (see DECISIONS.md 2026-11-22).
 
 ### Output style
 
