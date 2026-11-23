@@ -73,7 +73,16 @@ test_fresh_install() {
   assert_file_contains "$home_dir/.claude/settings.json" '"Stop"'
   assert_file_contains "$home_dir/.claude/settings.json" "bash $home_dir/.claude/dirty-tree-check.sh"
   assert_symlink_target "$home_dir/.claude/dirty-tree-check.sh" "$REPO_ROOT/scripts/dirty-tree-check.sh"
-  assert_file_contains "$home_dir/.config/opencode/opencode.json" '"instructions": ["'"$home_dir"'/.config/opencode/OPENCODE.md", "'"$home_dir"'/.config/opencode/OUTPUT-STYLE.md"]'
+  assert_eq "$(jq -c '.instructions' "$home_dir/.config/opencode/opencode.json")" \
+    '["'"$home_dir"'/.config/opencode/OPENCODE.md","'"$home_dir"'/.config/opencode/OUTPUT-STYLE.md"]' \
+    "opencode instructions mismatch"
+  # MCP manifest (config/mcp-servers.json) merged into the file-managed agents.
+  assert_eq "$(jq -c '.mcp.monarch' "$home_dir/.config/opencode/opencode.json")" \
+    '{"type":"remote","url":"https://api.monarch.com/mcp"}' "opencode monarch MCP missing"
+  assert_eq "$(jq -r '.mcpServers.monarch.url' "$home_dir/.cursor/mcp.json")" \
+    'https://api.monarch.com/mcp' "cursor monarch MCP missing"
+  assert_eq "$(jq -r '.mcpServers.slack.url' "$home_dir/.cursor/mcp.json")" \
+    'https://mcp.slack.com/mcp' "cursor slack MCP lost"
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"model": "ollama/qwen2.5-coder:14b"'
   assert_file_contains "$home_dir/.config/opencode/opencode.json" '"baseURL": "http://localhost:11434/v1"'
   assert_file_contains "$home_dir/.claude/settings.json" '"outputStyle": "ai-dotfiles"'

@@ -571,11 +571,15 @@ sync_settings() {
   local dest="$2"
   local placeholder="$3"
   local replacement="$4"
+  local mcp_target="${5:-}"
 
   [[ -f "$tpl" ]] || return 0
 
   local expected
   expected="$(sed "s|${placeholder}|${replacement}|g" "$tpl")"
+  if [[ -n "$mcp_target" ]]; then
+    expected="$(printf '%s' "$expected" | "$MCP_SYNC" merge "$mcp_target" "$MCP_MANIFEST")"
+  fi
   local actual
   actual="$(cat "$dest" 2>/dev/null || true)"
 
@@ -590,8 +594,15 @@ sync_settings() {
   fi
 }
 
+# config/mcp-servers.json is the one MCP source for every agent. File-managed
+# agents (OpenCode here, Cursor below) get it merged into their rendered config;
+# CLI-managed agents (Claude, Codex, agy, Pi) are registered via their own
+# `mcp add` further down (see DECISIONS.md 2026-11-22).
+MCP_SYNC="$DOTFILES_DIR/scripts/sync-mcp.sh"
+MCP_MANIFEST="$DOTFILES_DIR/config/mcp-servers.json"
+
 sync_settings "$DOTFILES_DIR/config/settings.json.tpl" "$CLAUDE_DIR/settings.json" "@@CLAUDE_DIR@@" "$CLAUDE_DIR"
-sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR"
+sync_settings "$DOTFILES_DIR/config/opencode.json.tpl" "$OPENCODE_DIR/opencode.json" "@@OPENCODE_DIR@@" "$OPENCODE_DIR" opencode
 
 # ~/.gemini/antigravity-cli/settings.json is agy's own file - it rewrites model
 # and trustedWorkspaces at runtime, so those keys are never touched here. Only
@@ -614,8 +625,23 @@ fi
 # rewrites that file itself and now persists model, [features], [tui], and the
 # Stop hook on its own. A merged block re-declared those tables, and TOML rejects
 # a duplicate table - Codex hard-failed at startup with "duplicate key". Own your
-# Codex config directly.
-cp "$DOTFILES_DIR/config/cursor-mcp.json" "$CURSOR_DIR/mcp.json"
+# Codex config directly. MCP servers are the one exception: they go in through
+# `codex mcp add`, Codex's own writer, never a managed block.
+"$MCP_SYNC" merge cursor "$MCP_MANIFEST" < "$DOTFILES_DIR/config/cursor-mcp.json" > "$CURSOR_DIR/mcp.json"
+
+# Claude keeps user-scope MCP servers in ~/.claude.json (settings.json cannot
+# hold them), and Codex/agy/Pi own their MCP files, so each agent's CLI writes
+# its own entry. Missing CLIs are skipped. OAuth sign-in is per agent.
+if MCP_REGISTER_OUT="$("$MCP_SYNC" register "$MCP_MANIFEST")"; then
+  while read -r mcp_state mcp_agent mcp_name _; do
+    case "$mcp_state" in
+      added) MERGED+=("MCP $mcp_name -> $mcp_agent") ;;
+      *)     SKIPPED+=("MCP $mcp_name -> $mcp_agent ($mcp_state)") ;;
+    esac
+  done <<<"$MCP_REGISTER_OUT"
+else
+  warn "MCP registration failed (scripts/sync-mcp.sh register)"
+fi
 
 # ── Terminal configuration ───────────────────────────────────────────────────
 
