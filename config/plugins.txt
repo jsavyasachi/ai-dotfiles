@@ -10,3 +10,4 @@ skill-creator@claude-plugins-official
 claude-md-management@claude-plugins-official
 security-guidance@claude-plugins-official
 telegram@claude-plugins-official
+discord@claude-plugins-official
